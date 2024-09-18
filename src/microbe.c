@@ -32,10 +32,10 @@
 
 #define PLAYER_TILE         0x00
 #define PLAYER_SPEED        1
-#define PLAYER_BULLET       MAX_BULLETS-1
+#define PLAYER_BULLET       0
 
 #define INVADERS_LAYER      0
-#define UI_LAYER            1
+#define UI_LAYER            MAX_BULLETS-1
 
 gfx_context vctx;
 Player player;
@@ -114,24 +114,26 @@ void init(void) {
     player.score = 0;
 
     err = gfx_sprite_set_tile(&vctx, player.sprite_index, PLAYER_TILE);
+    // TODO: error checking
     err = gfx_sprite_render(&vctx, player.sprite_index, &player.sprite);
     // TODO: error checking
 
-
     for(uint8_t i = 0; i < MAX_BULLETS; i++) {
-        bullets[i].direction = 1;
-        bullets[i].sprite.x = 0;
-        bullets[i].sprite.y = 256; // offscreen
-        bullets[i].sprite.flags = SPRITE_NONE;
-        bullets[i].sprite.tile = (BULLET_TILE + 3) - i;
-        bullets[i].sprite_index = i + 1;
         bullets[i].active = 0;
+        bullets[i].direction = 1; // down
+        bullets[i].sprite_index = i + 1;
+        bullets[i].sprite.x = player.sprite.x + (i * 16);
+        bullets[i].sprite.y = 16; // offscreen
+        bullets[i].sprite.flags = SPRITE_NONE;
+        bullets[i].sprite.tile = BULLET_TILE + i;
 
         err = gfx_sprite_set_tile(&vctx, bullets[i].sprite_index, BULLET_TILE);
         // TODO: error checking
+        err = gfx_sprite_render(&vctx, bullets[i].sprite_index, &bullets[i].sprite);
+        // TODO: error checking
     }
     // player bullet
-    bullets[PLAYER_BULLET].direction = 0;
+    bullets[PLAYER_BULLET].direction = 0; // up
 
     gfx_enable_screen(1);
 }
@@ -161,10 +163,12 @@ uint8_t input(void) {
     player.direction = 0; // not moving
     if(input & SNES_LEFT) player.direction = DIRECTION_LEFT;
     if(input & SNES_RIGHT) player.direction = DIRECTION_RIGHT;
-    if(input & SNES_B && bullets[PLAYER_BULLET].active == 0) {
-        bullets[PLAYER_BULLET].active = 1;
-        bullets[PLAYER_BULLET].sprite.x = player.sprite.x;
-        bullets[PLAYER_BULLET].sprite.y = player.sprite.y - 12;
+    if(input & SNES_B) {
+        if(bullets[PLAYER_BULLET].active == 0) {
+            bullets[PLAYER_BULLET].active = 1;
+            bullets[PLAYER_BULLET].sprite.x = player.sprite.x;
+            bullets[PLAYER_BULLET].sprite.y = player.sprite.y - 12;
+        }
     }
     if(input & SNES_START ) return 0;
 
@@ -203,39 +207,39 @@ void update(void) {
     // move the tilemap left/right to show the different invader frames?
 
     for(uint8_t i = 0; i < MAX_BULLETS; i++) {
+        // bullets[i].sprite.x = player.sprite.x + (i * 16);
         if(bullets[i].active) {
             // move the bullet
             bullets[i].sprite.y += bullets[i].direction ? 2 : -2;
+        }
 
-            uint16_t x = bullets[i].sprite.x;
-            uint16_t y = bullets[i].sprite.y;
-            // convert x,y to tile position
-            x = ((x + 8) >> 4) - 1;
-            y = ((y + 8) >> 4) - 1;
+        uint16_t x = bullets[i].sprite.x;
+        uint16_t y = bullets[i].sprite.y;
+        // convert x,y to tile position
+        x = ((x + 8) >> 4) - 1;
+        y = ((y + 8) >> 4) - 1;
 
-            uint16_t offset = (y * WIDTH) + x;
+        uint16_t offset = (y * WIDTH) + x;
 
-            uint8_t* tilemap = &_cave_tilemap_start;
-            uint8_t tile = tilemap[offset];
+        uint8_t* tilemap = &_cave_tilemap_start;
+        uint8_t tile = tilemap[offset];
 
-            // TODO: error checking
+        // // TODO: error checking
 
-            if(tile < 64) {
-                // found an invader
-                gfx_tilemap_place(&vctx, EMPTY_TILE, INVADERS_LAYER, x, y);
-                // update the offscreen animation tile
-                // gfx_tilemap_place(&vctx, EMPTY_TILE, INVADERS_LAYER, x + WIDTH, y + HEIGHT);
+        if(tile < 63) {
+            // found an invader
+            gfx_tilemap_place(&vctx, EMPTY_TILE, INVADERS_LAYER, x, y);
+            // update the offscreen animation tile
+            // gfx_tilemap_place(&vctx, EMPTY_TILE, INVADERS_LAYER, x + WIDTH, y + HEIGHT);
 
-                // move sprite offscreen
-                bullets[i].sprite.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
-                bullets[i].active = 0;
-            }
-
+            // move sprite offscreen
+            bullets[i].sprite.y = 16; // SCREEN_HEIGHT + SPRITE_HEIGHT;
+            bullets[i].active = 0;
         }
 
         if(bullets[i].sprite.y < (SPRITE_HEIGHT/2) || bullets[i].sprite.y > SCREEN_HEIGHT) {
             // move sprite offscreen
-            bullets[i].sprite.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
+            bullets[i].sprite.y = 16; // SCREEN_HEIGHT + SPRITE_HEIGHT;
             bullets[i].active = 0;
         }
     }
