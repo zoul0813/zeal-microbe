@@ -25,7 +25,7 @@
 #define WIDTH               20
 #define HEIGHT              15
 
-#define EMPTY_TILE          64
+#define EMPTY_TILE          63
 
 #define BULLET_TILE         3
 #define MAX_BULLETS         4
@@ -40,11 +40,14 @@
 gfx_context vctx;
 Player player;
 Bullet bullets[MAX_BULLETS];
+uint8_t tiles[WIDTH * HEIGHT];
+uint16_t invaders = 0;
 static uint16_t frames = 0;
 static uint8_t controller_mode = 1;
 
 int main(void) {
     init();
+    reset();
 
     while (input() != 0) {
         gfx_wait_vblank(&vctx);
@@ -54,10 +57,20 @@ int main(void) {
         }
         update();
         draw();
+
+        if(invaders == 0) {
+            msleep(1000);
+            reset();
+        }
+
         gfx_wait_end_vblank(&vctx);
     }
 
     deinit();
+
+    printf("Game complete\n");
+    printf("Score: %d\n\n", player.score);
+
     return 0; // unreachable
 }
 
@@ -101,6 +114,10 @@ void init(void) {
     err = gfx_tileset_load(&vctx, &_cave_tileset_start, sprite_size, &options);
     if (err) exit(1);
 
+    gfx_enable_screen(1);
+}
+
+void reset(void) {
     // Draw the tilemap
     load_tilemap();
 
@@ -113,7 +130,7 @@ void init(void) {
     player.direction = 0;
     player.score = 0;
 
-    err = gfx_sprite_set_tile(&vctx, player.sprite_index, PLAYER_TILE);
+    gfx_error err = gfx_sprite_set_tile(&vctx, player.sprite_index, PLAYER_TILE);
     // TODO: error checking
     err = gfx_sprite_render(&vctx, player.sprite_index, &player.sprite);
     // TODO: error checking
@@ -135,7 +152,6 @@ void init(void) {
     // player bullet
     bullets[PLAYER_BULLET].direction = 0; // up
 
-    gfx_enable_screen(1);
 }
 
 void deinit(void) {
@@ -150,7 +166,15 @@ void load_tilemap(void) {
     for (uint16_t i = 0; i < HEIGHT; i++) {
         uint16_t offset = i * WIDTH;
         memcpy(&line, &_cave_tilemap_start + offset, WIDTH);
+        memcpy(&tiles[offset], &line, WIDTH);
         gfx_tilemap_load(&vctx, line, WIDTH, INVADERS_LAYER, 0, i);
+    }
+
+    for(uint16_t i = 0; i < WIDTH * HEIGHT; i++) {
+        uint8_t tile = tiles[i];
+        if(tile < EMPTY_TILE) {
+            invaders++;
+        }
     }
 }
 
@@ -220,15 +244,15 @@ void update(void) {
         y = ((y + 8) >> 4) - 1;
 
         uint16_t offset = (y * WIDTH) + x;
-
-        uint8_t* tilemap = &_cave_tilemap_start;
-        uint8_t tile = tilemap[offset];
-
+        uint8_t tile = tiles[offset];
         // // TODO: error checking
 
-        if(tile < 63) {
+        if(tile < EMPTY_TILE) {
             // found an invader
             gfx_tilemap_place(&vctx, EMPTY_TILE, INVADERS_LAYER, x, y);
+            tiles[offset] = EMPTY_TILE;
+            invaders--;
+            player.score++;
             // update the offscreen animation tile
             // gfx_tilemap_place(&vctx, EMPTY_TILE, INVADERS_LAYER, x + WIDTH, y + HEIGHT);
 

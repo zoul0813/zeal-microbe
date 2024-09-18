@@ -13,6 +13,7 @@
 #define DIRECTION_RIGHT 2
 
 void init(void);
+void reset(void);
 void deinit(void);
 void load_tilemap(void);
 void draw(void);
