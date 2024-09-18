@@ -1,0 +1,12 @@
+{
+"C_Cpp.default.includePath": [
+  "${workspaceFolder}/sdcc",
+  "${env:ZVB_SDK_PATH}/include",
+  "${env:ZVB_SDK_PATH}/sdcc",
+  "${env:ZOS_PATH}/kernel_headers/sdcc/include",
+],
+"files.associations": {
+  "stdint.h": "c",
+  "string.h": "c"
+},
+}

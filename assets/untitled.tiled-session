@@ -1,0 +1,43 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "microbe.tmx",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "fileStates": {
+        "microbe.tmx": {
+            "scale": 2.78171875,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 166.62360276357916,
+                "y": 122.04684603718475
+            }
+        },
+        "microbe.tsx": {
+            "scaleInDock": 2.0896,
+            "scaleInEditor": 1
+        }
+    },
+    "last.imagePath": "/Users/david.higgins@konghq.com/Documents/Private/zeal/mycode/microbe/assets",
+    "map.height": 15,
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 16,
+    "map.tileWidth": 16,
+    "map.width": 20,
+    "openFiles": [
+        "microbe.tmx"
+    ],
+    "project": "untitled.tiled-project",
+    "recentFiles": [
+        "microbe.tmx",
+        "microbe.tsx"
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.tileSize": {
+        "height": 16,
+        "width": 16
+    }
+}
