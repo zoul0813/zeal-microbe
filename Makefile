@@ -43,6 +43,7 @@ ZVB_INCLUDE=$(ZVB_SDK_PATH)/include/
 ZOS_INCLUDE=$(ZOS_PATH)/kernel_headers/sdcc/include/
 ZVB_LIB_PATH=$(ZVB_SDK_PATH)/lib/
 ZOS_LIB_PATH=$(ZOS_PATH)/kernel_headers/sdcc/lib
+ASEPRITE_PATH := ~/Library/Application\ Support/Steam/steamapps/common/Aseprite/Aseprite.app/Contents/MacOS/aseprite
 # Regarding the linking process, we will need to specify the path to the crt0 REL file.
 # It contains the boot code for C programs as well as all the C functions performing syscalls.
 CRT_REL=$(ZOS_PATH)/kernel_headers/sdcc/bin/zos_crt0.rel
@@ -68,6 +69,11 @@ SRCS_ASM_REL=$(patsubst %.asm,%.rel,$(SRCS_OUT_DIR))
 
 
 .PHONY: all clean
+
+generate:
+	$(ASEPRITE_PATH) -b --sheet assets/microbe.gif assets/microbe.aseprite
+	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i assets/microbe.gif -t assets/microbe.zts -p assets/microbe.ztp
+	$(ZVB_SDK_PATH)/tools/tiled2zeal/tiled2zeal.py -i assets/microbe.tmx -m assets/micro.ztm
 
 all: clean $(OUTPUT_DIR) $(OUTPUT_DIR)/$(BIN_HEX) $(OUTPUT_DIR)/$(BIN)
 	@bash -c 'echo -e "\x1b[32;1mSuccess, binary generated: $(OUTPUT_DIR)/$(BIN)\x1b[0m"'
