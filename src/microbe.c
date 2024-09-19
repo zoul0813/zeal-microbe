@@ -16,6 +16,7 @@
 #include <zvb_hardware.h>
 #include <zos_video.h>
 #include "microbe.h"
+#include "utils.h"
 #include "keyboard.h"
 #include "controller.h"
 
@@ -27,7 +28,7 @@
 
 #define EMPTY_TILE          63
 
-#define BULLET_TILE         3
+#define BULLET_TILE         1
 #define MAX_BULLETS         4
 
 #define PLAYER_TILE         0x00
@@ -42,7 +43,7 @@ Player player;
 Bullet bullets[MAX_BULLETS];
 uint8_t tiles[WIDTH * HEIGHT];
 uint16_t invaders = 0;
-static uint16_t frames = 0;
+static uint8_t frames = 0;
 static uint8_t controller_mode = 1;
 
 int main(void) {
@@ -52,14 +53,13 @@ int main(void) {
     while (input() != 0) {
         gfx_wait_vblank(&vctx);
         frames++;
-        if(frames > 60) {
-            frames = 0;
-        }
+
         update();
+
         draw();
 
         if(invaders == 0) {
-            msleep(1000);
+            msleep(1500);
             reset();
         }
 
@@ -114,6 +114,11 @@ void init(void) {
     err = gfx_tileset_load(&vctx, &_cave_tileset_start, sprite_size, &options);
     if (err) exit(1);
 
+    player.score = 0;
+    player.sprite.tile = PLAYER_TILE;
+    player.sprite_index = 0;
+
+
     gfx_enable_screen(1);
 }
 
@@ -125,10 +130,7 @@ void reset(void) {
     player.sprite.x = ((WIDTH / 2) * 16) - 8;
     player.sprite.y = 16 * 14;
     player.sprite.flags = SPRITE_NONE;
-    player.sprite.tile = PLAYER_TILE;
-    player.sprite_index = 0;
     player.direction = 0;
-    player.score = 0;
 
     gfx_error err = gfx_sprite_set_tile(&vctx, player.sprite_index, PLAYER_TILE);
     // TODO: error checking
@@ -140,7 +142,7 @@ void reset(void) {
         bullets[i].direction = 1; // down
         bullets[i].sprite_index = i + 1;
         bullets[i].sprite.x = player.sprite.x + (i * 16);
-        bullets[i].sprite.y = 16; // offscreen
+        bullets[i].sprite.y = SCREEN_HEIGHT + SPRITE_HEIGHT; // offscreen
         bullets[i].sprite.flags = SPRITE_NONE;
         bullets[i].sprite.tile = BULLET_TILE + i;
 
@@ -170,6 +172,7 @@ void load_tilemap(void) {
         gfx_tilemap_load(&vctx, line, WIDTH, INVADERS_LAYER, 0, i);
     }
 
+    invaders = 0;
     for(uint16_t i = 0; i < WIDTH * HEIGHT; i++) {
         uint8_t tile = tiles[i];
         if(tile < EMPTY_TILE) {
@@ -199,9 +202,6 @@ uint8_t input(void) {
     return 255;
 }
 
-/**
- * Simple Edge Bounce animation
-*/
 void draw(void) {
     gfx_error err = GFX_SUCCESS; // TODO: return this?
 
@@ -227,6 +227,11 @@ void update(void) {
     if(player.sprite.x < 16) player.sprite.x = 16;
     if(player.sprite.x > 320) player.sprite.x = 320;
 
+    if(frames == 64) {
+        bullets[1].active = 1;
+        bullets[1].sprite.y = (rand8() >> 1) + 16;
+    }
+
     // TODO: animate the invaders
     // move the tilemap left/right to show the different invader frames?
 
@@ -239,31 +244,43 @@ void update(void) {
 
         uint16_t x = bullets[i].sprite.x;
         uint16_t y = bullets[i].sprite.y;
-        // convert x,y to tile position
-        x = ((x + 8) >> 4) - 1;
-        y = ((y + 8) >> 4) - 1;
+        if(i > 0) {
+            x += 8;
+            if(x > player.sprite.x && x < player.sprite.x + 16) {
+                if(y >= player.sprite.y - 16) {
+                    bullets[i].active = 0;
+                    bullets[i].sprite.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
+                    bullets[i].sprite.x = rand8() + 32;
+                }
+            }
+        } else {
+            // convert x,y to tile position
+            x = ((x + 8) >> 4) - 1;
+            y = ((y + 8) >> 4) - 1;
 
-        uint16_t offset = (y * WIDTH) + x;
-        uint8_t tile = tiles[offset];
-        // // TODO: error checking
+            uint16_t offset = (y * WIDTH) + x;
+            uint8_t tile = tiles[offset];
+            // // TODO: error checking
 
-        if(tile < EMPTY_TILE) {
-            // found an invader
-            gfx_tilemap_place(&vctx, EMPTY_TILE, INVADERS_LAYER, x, y);
-            tiles[offset] = EMPTY_TILE;
-            invaders--;
-            player.score++;
-            // update the offscreen animation tile
-            // gfx_tilemap_place(&vctx, EMPTY_TILE, INVADERS_LAYER, x + WIDTH, y + HEIGHT);
+            if(tile < EMPTY_TILE) {
+                // found an invader
+                gfx_tilemap_place(&vctx, EMPTY_TILE, INVADERS_LAYER, x, y);
+                tiles[offset] = EMPTY_TILE;
+                invaders--;
+                player.score++;
+                // update the offscreen animation tile
+                // gfx_tilemap_place(&vctx, EMPTY_TILE, INVADERS_LAYER, x + WIDTH, y + HEIGHT);
 
-            // move sprite offscreen
-            bullets[i].sprite.y = 16; // SCREEN_HEIGHT + SPRITE_HEIGHT;
-            bullets[i].active = 0;
+                // move sprite offscreen
+                bullets[i].sprite.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
+                bullets[i].active = 0;
+            }
         }
 
         if(bullets[i].sprite.y < (SPRITE_HEIGHT/2) || bullets[i].sprite.y > SCREEN_HEIGHT) {
             // move sprite offscreen
-            bullets[i].sprite.y = 16; // SCREEN_HEIGHT + SPRITE_HEIGHT;
+            bullets[i].sprite.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
+            bullets[i].sprite.x = rand8() + 32;
             bullets[i].active = 0;
         }
     }

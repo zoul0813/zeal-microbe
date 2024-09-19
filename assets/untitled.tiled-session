@@ -28,12 +28,13 @@
     "map.tileWidth": 16,
     "map.width": 20,
     "openFiles": [
+        "microbe.tsx",
         "microbe.tmx"
     ],
     "project": "untitled.tiled-project",
     "recentFiles": [
-        "microbe.tmx",
-        "microbe.tsx"
+        "microbe.tsx",
+        "microbe.tmx"
     ],
     "tileset.lastUsedFormat": "tsx",
     "tileset.tileSize": {
