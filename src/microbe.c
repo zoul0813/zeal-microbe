@@ -60,6 +60,7 @@ int main(void) {
 
         if(invaders == 0) {
             msleep(1500);
+            player.level++;
             reset();
         }
 
@@ -98,23 +99,36 @@ void init(void) {
     if (err) exit(1);
 
     // Load the palette
-    extern uint8_t _cave_palette_end;
-    extern uint8_t _cave_palette_start;
-    const size_t palette_size = &_cave_palette_end - &_cave_palette_start;
-    err = gfx_palette_load(&vctx, &_cave_palette_start, palette_size, 0);
+    extern uint8_t _palette_end;
+    extern uint8_t _palette_start;
+    const size_t palette_size = &_palette_end - &_palette_start;
+    err = gfx_palette_load(&vctx, &_palette_start, palette_size, 0);
     if (err) exit(1);
 
     // Load the tiles
-    extern uint8_t _cave_tileset_end;
-    extern uint8_t _cave_tileset_start;
-    const size_t sprite_size = &_cave_tileset_end - &_cave_tileset_start;
+    // extern uint8_t _tileset_end;
+    extern uint8_t _tileset_start;
+    uint16_t row_size = TILE_SIZE * 16;
     gfx_tileset_options options = {
         .compression = TILESET_COMP_NONE,
     };
-    err = gfx_tileset_load(&vctx, &_cave_tileset_start, sprite_size, &options);
+
+    // sprites
+    err = gfx_tileset_load(&vctx, &_tileset_start, row_size, &options);
+    if (err) exit(1);
+
+    // numbers
+    options.from_byte = TILE_SIZE * 44, // 0x2C00
+    err = gfx_tileset_load(&vctx, &_tileset_start + row_size, row_size, &options);
+    if (err) exit(1);
+
+    // letters
+    options.from_byte = TILE_SIZE * 97; // 0x6100
+    err = gfx_tileset_load(&vctx, &_tileset_start + row_size + row_size, row_size * 2, &options);
     if (err) exit(1);
 
     player.score = 0;
+    player.level = 1;
     player.sprite.tile = PLAYER_TILE;
     player.sprite_index = 0;
 
@@ -164,10 +178,10 @@ void load_tilemap(void) {
     uint8_t line[WIDTH];
 
     // Load the tilemap
-    extern uint8_t _cave_tilemap_start;
+    extern uint8_t _tilemap_start;
     for (uint16_t i = 0; i < HEIGHT; i++) {
         uint16_t offset = i * WIDTH;
-        memcpy(&line, &_cave_tilemap_start + offset, WIDTH);
+        memcpy(&line, &_tilemap_start + offset, WIDTH);
         memcpy(&tiles[offset], &line, WIDTH);
         gfx_tilemap_load(&vctx, line, WIDTH, INVADERS_LAYER, 0, i);
     }
@@ -213,12 +227,19 @@ void draw(void) {
         err = gfx_sprite_render(&vctx, bullets[i].sprite_index, &bullets[i].sprite);
     }
 
+    char text[10];
+    sprintf(text,"scr: %03d", player.score);
+    nprint_string(&vctx, text, strlen(text), WIDTH - 8, HEIGHT - 1);
+
+    sprintf(text,"lvl: %03d", player.level);
+    nprint_string(&vctx, text, strlen(text), 0, HEIGHT - 1);
+
     // TODO: error checking
 }
 
 void update(void) {
     gfx_error err = GFX_SUCCESS; // TODO: return this?
-    extern uint8_t _cave_tilemap_start;
+    // extern uint8_t _tilemap_start;
 
     if(player.direction) {
         player.sprite.x += (player.direction == DIRECTION_LEFT ? -1 : 1) * PLAYER_SPEED;
@@ -237,10 +258,10 @@ void update(void) {
 
     for(uint8_t i = 0; i < MAX_BULLETS; i++) {
         // bullets[i].sprite.x = player.sprite.x + (i * 16);
-        if(bullets[i].active) {
-            // move the bullet
-            bullets[i].sprite.y += bullets[i].direction ? 2 : -2;
-        }
+        if(bullets[i].active == 0) continue;
+
+        // move the bullet
+        bullets[i].sprite.y += bullets[i].direction ? 2 : -2;
 
         uint16_t x = bullets[i].sprite.x;
         uint16_t y = bullets[i].sprite.y;
@@ -286,26 +307,26 @@ void update(void) {
     }
 }
 
-void _cave_palette(void) {
+void _palette(void) {
     __asm__(
-    "__cave_palette_start:\n"
+    "__palette_start:\n"
     "    .incbin \"assets/microbe.ztp\"\n"
-    "__cave_palette_end:\n"
+    "__palette_end:\n"
     );
 }
 
-void _cave_tileset(void) {
+void _tileset(void) {
     __asm__(
-    "__cave_tileset_start:\n"
+    "__tileset_start:\n"
     "    .incbin \"assets/microbe.zts\"\n"
-    "__cave_tileset_end:\n"
+    "__tileset_end:\n"
     );
 }
 
-void _cave_tilemap(void) {
+void _tilemap(void) {
     __asm__(
-    "__cave_tilemap_start:\n"
+    "__tilemap_start:\n"
     "    .incbin \"assets/microbe.ztm\"\n"
-    "__cave_tilemap_end:\n"
+    "__tilemap_end:\n"
     );
 }

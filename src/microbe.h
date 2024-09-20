@@ -12,6 +12,8 @@
 #define DIRECTION_LEFT  1
 #define DIRECTION_RIGHT 2
 
+#define TILE_SIZE       (16 * 16)
+
 void init(void);
 void reset(void);
 void deinit(void);
@@ -28,6 +30,7 @@ typedef struct {
 
     uint8_t direction;
     uint16_t score;
+    uint8_t level;
 } Player;
 
 typedef struct {

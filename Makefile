@@ -70,11 +70,6 @@ SRCS_ASM_REL=$(patsubst %.asm,%.rel,$(SRCS_OUT_DIR))
 
 .PHONY: all clean
 
-generate:
-	$(ASEPRITE_PATH) -b --sheet assets/microbe.gif assets/microbe.aseprite
-	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i assets/microbe.gif -t assets/microbe.zts -p assets/microbe.ztp
-	$(ZVB_SDK_PATH)/tools/tiled2zeal/tiled2zeal.py -i assets/microbe.tmx -m assets/micro.ztm
-
 all: clean $(OUTPUT_DIR) $(OUTPUT_DIR)/$(BIN_HEX) $(OUTPUT_DIR)/$(BIN)
 	@bash -c 'echo -e "\x1b[32;1mSuccess, binary generated: $(OUTPUT_DIR)/$(BIN)\x1b[0m"'
 	@echo "uartrcv $$($(STAT_BYTES) $(OUTPUT_DIR)/$(BIN)) $(BIN)"
@@ -96,6 +91,13 @@ $(OUTPUT_DIR)/$(BIN_HEX): $(CRT_REL) $(SRCS_REL)
 # Convert the Intel HEX file to an actual binary.
 $(OUTPUT_DIR)/$(BIN):
 	$(OBJCOPY) --input-target=ihex --output-target=binary $(OUTPUT_DIR)/$(BIN_HEX) $(OUTPUT_DIR)/$(BIN)
+
+regenerate:
+	$(ASEPRITE_PATH) -b --sheet assets/microbe.gif assets/microbe.aseprite
+	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i assets/microbe.gif -t assets/microbe.zts -p assets/microbe.ztp
+	$(ZVB_SDK_PATH)/tools/tiled2zeal/tiled2zeal.py -i assets/microbe.tmx -m assets/microbe.ztm
+
+generate: regenerate all
 
 clean:
 	rm -fr bin/

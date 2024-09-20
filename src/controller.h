@@ -24,8 +24,12 @@
 #define SNES_UNUSED3    0x4000  // 15
 #define SNES_UNUSED4    0x8000  // 16
 
+static uint16_t buttons = 0; // nothing
+
 zos_err_t controller_init(void);
 zos_err_t controller_flush(void);
 
 uint16_t controller_read(void);
-uint8_t controller_pressed(uint16_t button);
+static inline uint8_t controller_pressed(uint16_t button) {
+    return buttons & button;
+}
