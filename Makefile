@@ -43,7 +43,7 @@ ZVB_INCLUDE=$(ZVB_SDK_PATH)/include/
 ZOS_INCLUDE=$(ZOS_PATH)/kernel_headers/sdcc/include/
 ZVB_LIB_PATH=$(ZVB_SDK_PATH)/lib/
 ZOS_LIB_PATH=$(ZOS_PATH)/kernel_headers/sdcc/lib
-ASEPRITE_PATH := ~/Library/Application\ Support/Steam/steamapps/common/Aseprite/Aseprite.app/Contents/MacOS/aseprite
+ASEPRITE_PATH ?= ~/.steam/debian-installation/steamapps/common/Aseprite/aseprite
 # Regarding the linking process, we will need to specify the path to the crt0 REL file.
 # It contains the boot code for C programs as well as all the C functions performing syscalls.
 CRT_REL=$(ZOS_PATH)/kernel_headers/sdcc/bin/zos_crt0.rel
