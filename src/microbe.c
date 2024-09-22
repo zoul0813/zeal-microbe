@@ -15,6 +15,7 @@
 #include <zvb_gfx.h>
 #include <zvb_hardware.h>
 #include <zos_video.h>
+#include "assets.h"
 #include "microbe.h"
 #include "utils.h"
 #include "keyboard.h"
@@ -26,14 +27,16 @@
 #define WIDTH               20
 #define HEIGHT              15
 
-#define EMPTY_TILE          63
+#define TILEMAP_OFFSET      0x80
+#define EMPTY_TILE          0x7F
 
-#define BULLET_TILE         1
+#define BULLET_TILE         0x81
 #define MAX_BULLETS         4
 
-#define PLAYER_TILE         0x00
+#define PLAYER_TILE         0x80
 #define PLAYER_SPEED        1
 #define PLAYER_BULLET       0
+
 
 #define INVADERS_LAYER      0
 #define UI_LAYER            MAX_BULLETS-1
@@ -43,11 +46,15 @@ Player player;
 Bullet bullets[MAX_BULLETS];
 uint8_t tiles[WIDTH * HEIGHT];
 uint16_t invaders = 0;
-static uint8_t frames = 0;
 static uint8_t controller_mode = 1;
+static uint8_t frames = 0;
+
 
 int main(void) {
     init();
+
+    load_splash();
+
     reset();
 
     while (input() != 0) {
@@ -98,34 +105,27 @@ void init(void) {
     err = gfx_initialize(ZVB_CTRL_VID_MODE_GFX_320_8BIT, &vctx);
     if (err) exit(1);
 
-    // Load the palette
-    extern uint8_t _palette_end;
-    extern uint8_t _palette_start;
-    const size_t palette_size = &_palette_end - &_palette_start;
-    err = gfx_palette_load(&vctx, &_palette_start, palette_size, 0);
+    err = load_palette(&vctx);
+    if(err) exit(1);
+
+    err = load_tiles(&vctx);
     if (err) exit(1);
 
-    // Load the tiles
-    // extern uint8_t _tileset_end;
-    extern uint8_t _tileset_start;
-    uint16_t row_size = TILE_SIZE * 16;
-    gfx_tileset_options options = {
-        .compression = TILESET_COMP_NONE,
-    };
-
-    // sprites
-    err = gfx_tileset_load(&vctx, &_tileset_start, row_size, &options);
+    err = load_numbers(&vctx);
     if (err) exit(1);
 
-    // numbers
-    options.from_byte = TILE_SIZE * 44, // 0x2C00
-    err = gfx_tileset_load(&vctx, &_tileset_start + row_size, row_size, &options);
-    if (err) exit(1);
+    // err = load_letters(&vctx);
+    // if (err) exit(1);
 
-    // letters
-    options.from_byte = TILE_SIZE * 97; // 0x6100
-    err = gfx_tileset_load(&vctx, &_tileset_start + row_size + row_size, row_size * 2, &options);
-    if (err) exit(1);
+    // // numbers
+    // options.from_byte = TILE_SIZE * 44, // 0x2C00
+    // err = gfx_tileset_load(&vctx, &_tiles_start + row_size, row_size, &options);
+    // if (err) exit(1);
+
+    // // letters
+    // options.from_byte = TILE_SIZE * 97; // 0x6100
+    // err = gfx_tileset_load(&vctx, &_tiles_start + row_size + row_size, row_size * 2, &options);
+    // if (err) exit(1);
 
     player.score = 0;
     player.level = 1;
@@ -176,23 +176,47 @@ void deinit(void) {
 
 void load_tilemap(void) {
     uint8_t line[WIDTH];
+    uint8_t* tilemap = get_tilemap_start();
 
     // Load the tilemap
-    extern uint8_t _tilemap_start;
-    for (uint16_t i = 0; i < HEIGHT; i++) {
-        uint16_t offset = i * WIDTH;
-        memcpy(&line, &_tilemap_start + offset, WIDTH);
+    for (uint16_t row = 0; row < HEIGHT; row++) {
+        uint16_t offset = row * WIDTH;
+        for(uint16_t col = 0; col < WIDTH; col++) {
+            line[col] = tilemap[offset + col] + TILEMAP_OFFSET;
+        }
         memcpy(&tiles[offset], &line, WIDTH);
-        gfx_tilemap_load(&vctx, line, WIDTH, INVADERS_LAYER, 0, i);
+        gfx_tilemap_load(&vctx, line, WIDTH, INVADERS_LAYER, 0, row);
     }
 
     invaders = 0;
     for(uint16_t i = 0; i < WIDTH * HEIGHT; i++) {
         uint8_t tile = tiles[i];
-        if(tile < EMPTY_TILE) {
+        if(tile > EMPTY_TILE) {
             invaders++;
         }
     }
+}
+
+void load_splash(void) {
+    uint8_t line[WIDTH];
+    uint8_t* tilemap = get_splash_start();
+
+    // Load the tilemap
+    for (uint16_t row = 0; row < HEIGHT; row++) {
+        uint16_t offset = row * WIDTH;
+        for(uint16_t col = 0; col < WIDTH; col++) {
+            line[col] = tilemap[offset + col] + TILEMAP_OFFSET;
+        }
+        gfx_tilemap_load(&vctx, line, WIDTH, INVADERS_LAYER, 0, row);
+    }
+
+    msleep(250);
+    // TODO: show "press start to begin"
+    while(input() != 0) { } // wait for press
+    msleep(100);
+    while(input() == 0) { } // wait for release
+    keyboard_flush(); // peace of mind
+    controller_flush(); // peace of mind
 }
 
 uint8_t input(void) {
@@ -239,7 +263,6 @@ void draw(void) {
 
 void update(void) {
     gfx_error err = GFX_SUCCESS; // TODO: return this?
-    // extern uint8_t _tilemap_start;
 
     if(player.direction) {
         player.sprite.x += (player.direction == DIRECTION_LEFT ? -1 : 1) * PLAYER_SPEED;
@@ -283,7 +306,7 @@ void update(void) {
             uint8_t tile = tiles[offset];
             // // TODO: error checking
 
-            if(tile < EMPTY_TILE) {
+            if(tile > EMPTY_TILE) {
                 // found an invader
                 gfx_tilemap_place(&vctx, EMPTY_TILE, INVADERS_LAYER, x, y);
                 tiles[offset] = EMPTY_TILE;
@@ -305,28 +328,4 @@ void update(void) {
             bullets[i].active = 0;
         }
     }
-}
-
-void _palette(void) {
-    __asm__(
-    "__palette_start:\n"
-    "    .incbin \"assets/microbe.ztp\"\n"
-    "__palette_end:\n"
-    );
-}
-
-void _tileset(void) {
-    __asm__(
-    "__tileset_start:\n"
-    "    .incbin \"assets/microbe.zts\"\n"
-    "__tileset_end:\n"
-    );
-}
-
-void _tilemap(void) {
-    __asm__(
-    "__tilemap_start:\n"
-    "    .incbin \"assets/microbe.ztm\"\n"
-    "__tilemap_end:\n"
-    );
 }

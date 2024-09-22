@@ -25,7 +25,7 @@ endif
 
 
 # Specify the files to compile and the name of the final binary
-SRCS=microbe.c controller.c keyboard.c utils.c
+SRCS=microbe.c assets.c controller.c keyboard.c utils.c
 BIN=microbe.bin
 
 # Directory where source files are and where the binaries will be put
@@ -93,9 +93,16 @@ $(OUTPUT_DIR)/$(BIN):
 	$(OBJCOPY) --input-target=ihex --output-target=binary $(OUTPUT_DIR)/$(BIN_HEX) $(OUTPUT_DIR)/$(BIN)
 
 regenerate:
-	$(ASEPRITE_PATH) -b --sheet assets/microbe.gif assets/microbe.aseprite
-	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i assets/microbe.gif -t assets/microbe.zts -p assets/microbe.ztp
+	$(ASEPRITE_PATH) -b --sheet assets/tiles.gif assets/tiles.aseprite
+	$(ASEPRITE_PATH) -b --sheet assets/letters.gif assets/letters.aseprite
+	$(ASEPRITE_PATH) -b --sheet assets/numbers.gif assets/numbers.aseprite
+
+	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i assets/tiles.gif -t assets/tiles.zts -p assets/tiles.ztp
+	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i assets/letters.gif -t assets/letters.zts -p assets/letters.ztp
+	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i assets/numbers.gif -t assets/numbers.zts -p assets/numbers.ztp
+
 	$(ZVB_SDK_PATH)/tools/tiled2zeal/tiled2zeal.py -i assets/microbe.tmx -m assets/microbe.ztm
+	$(ZVB_SDK_PATH)/tools/tiled2zeal/tiled2zeal.py -i assets/splash.tmx -m assets/splash.ztm
 
 generate: regenerate all
 

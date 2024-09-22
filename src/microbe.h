@@ -18,6 +18,7 @@ void init(void);
 void reset(void);
 void deinit(void);
 void load_tilemap(void);
+void load_splash(void);
 void draw(void);
 void update(void);
 uint8_t input(void);
