@@ -37,7 +37,6 @@
 #define PLAYER_SPEED        1
 #define PLAYER_BULLET       0
 
-
 #define INVADERS_LAYER      0
 #define UI_LAYER            MAX_BULLETS-1
 
@@ -60,6 +59,9 @@ int main(void) {
     while (input() != 0) {
         gfx_wait_vblank(&vctx);
         frames++;
+        if(frames > 128) {
+            frames == 0;
+        }
 
         update();
 
@@ -108,30 +110,25 @@ void init(void) {
     err = load_palette(&vctx);
     if(err) exit(1);
 
-    err = load_tiles(&vctx);
+    gfx_tileset_options options = {
+        .compression = TILESET_COMP_RLE,
+        .from_byte = TILE_SIZE * 44, // 0x6100
+    };
+    err = load_numbers(&vctx, &options);
     if (err) exit(1);
 
-    err = load_numbers(&vctx);
+    options.from_byte = TILE_SIZE * 97;
+    err = load_letters(&vctx, &options);
     if (err) exit(1);
 
-    // err = load_letters(&vctx);
-    // if (err) exit(1);
-
-    // // numbers
-    // options.from_byte = TILE_SIZE * 44, // 0x2C00
-    // err = gfx_tileset_load(&vctx, &_tiles_start + row_size, row_size, &options);
-    // if (err) exit(1);
-
-    // // letters
-    // options.from_byte = TILE_SIZE * 97; // 0x6100
-    // err = gfx_tileset_load(&vctx, &_tiles_start + row_size + row_size, row_size * 2, &options);
-    // if (err) exit(1);
+    options.from_byte = 0x8000; // 128
+    err = load_tiles(&vctx, &options);
+    if (err) exit(1);
 
     player.score = 0;
     player.level = 1;
     player.sprite.tile = PLAYER_TILE;
     player.sprite_index = 0;
-
 
     gfx_enable_screen(1);
 }
@@ -200,21 +197,35 @@ void load_tilemap(void) {
 void load_splash(void) {
     uint8_t line[WIDTH];
     uint8_t* tilemap = get_splash_start();
-
+    gfx_error err;
     // Load the tilemap
     for (uint16_t row = 0; row < HEIGHT; row++) {
         uint16_t offset = row * WIDTH;
         for(uint16_t col = 0; col < WIDTH; col++) {
             line[col] = tilemap[offset + col] + TILEMAP_OFFSET;
         }
-        gfx_tilemap_load(&vctx, line, WIDTH, INVADERS_LAYER, 0, row);
+        err = gfx_tilemap_load(&vctx, line, WIDTH, INVADERS_LAYER, 0, row);
+        // TODO: error checking
     }
+
+    // player.sprite.x = ((WIDTH / 2) * 16) - 8;
+    // player.sprite.y = 16 * 14;
+    // err = gfx_sprite_render(&vctx, player.sprite_index, &player.sprite);
+    // // TODO: error checking
+
+    char text[20];
+    sprintf(text, "press  start");
+    nprint_string(&vctx, text, strlen(text), 4, 13);
 
     msleep(250);
     // TODO: show "press start to begin"
     while(input() != 0) { } // wait for press
     msleep(100);
     while(input() == 0) { } // wait for release
+
+    sprintf(text, "            ");
+    nprint_string(&vctx, text, strlen(text), 4, 13);
+
     keyboard_flush(); // peace of mind
     controller_flush(); // peace of mind
 }
@@ -252,28 +263,61 @@ void draw(void) {
     }
 
     char text[10];
-    sprintf(text,"scr: %03d", player.score);
+    sprintf(text, "scr: %03d", player.score);
     nprint_string(&vctx, text, strlen(text), WIDTH - 8, HEIGHT - 1);
 
-    sprintf(text,"lvl: %03d", player.level);
+    sprintf(text, "lvl: %03d", player.level);
     nprint_string(&vctx, text, strlen(text), 0, HEIGHT - 1);
 
     // TODO: error checking
+}
+
+static void invader_shoot(uint8_t index) {
+    bullets[index].active = 1;
+    // TODO: random select invader
+    uint8_t rng = (rand8() & 0x1F);
+    while(rng > invaders) {
+        rng >>= 1;
+    }
+    uint8_t invader = 0;
+    for(uint8_t y = 0; y < HEIGHT; y++) {
+        for(uint8_t x = 0; x < WIDTH; x++) {
+            uint16_t offset = (y * WIDTH) + x;
+            uint8_t tile = tiles[offset];
+            if(tile > EMPTY_TILE) {
+                invader++;
+                if(invader >= rng) {
+                    bullets[index].sprite.x = (x * 16) + 16;
+                    bullets[index].sprite.y = (y * 16) + 16;
+                    return;
+                    // goto invader_shoot_done;
+                }
+            }
+        }
+    }
+    // invader_shoot_done:
 }
 
 void update(void) {
     gfx_error err = GFX_SUCCESS; // TODO: return this?
 
     if(player.direction) {
-        player.sprite.x += (player.direction == DIRECTION_LEFT ? -1 : 1) * PLAYER_SPEED;
+        player.sprite.x += player.direction * PLAYER_SPEED;
     }
 
     if(player.sprite.x < 16) player.sprite.x = 16;
     if(player.sprite.x > 320) player.sprite.x = 320;
 
-    if(frames == 64) {
-        bullets[1].active = 1;
-        bullets[1].sprite.y = (rand8() >> 1) + 16;
+    if(frames == 16) {
+        invader_shoot(1);
+    }
+
+    if(frames == 24) {
+        invader_shoot(2);
+    }
+
+    if(frames == 40) {
+        invader_shoot(3);
     }
 
     // TODO: animate the invaders
@@ -324,7 +368,6 @@ void update(void) {
         if(bullets[i].sprite.y < (SPRITE_HEIGHT/2) || bullets[i].sprite.y > SCREEN_HEIGHT) {
             // move sprite offscreen
             bullets[i].sprite.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
-            bullets[i].sprite.x = rand8() + 32;
             bullets[i].active = 0;
         }
     }

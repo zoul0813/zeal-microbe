@@ -97,9 +97,9 @@ regenerate:
 	$(ASEPRITE_PATH) -b --sheet assets/letters.gif assets/letters.aseprite
 	$(ASEPRITE_PATH) -b --sheet assets/numbers.gif assets/numbers.aseprite
 
-	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i assets/tiles.gif -t assets/tiles.zts -p assets/tiles.ztp
-	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i assets/letters.gif -t assets/letters.zts -p assets/letters.ztp
-	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i assets/numbers.gif -t assets/numbers.zts -p assets/numbers.ztp
+	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i assets/tiles.gif -t assets/tiles.zts -p assets/tiles.ztp -c
+	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i assets/letters.gif -t assets/letters.zts -p assets/letters.ztp -c
+	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i assets/numbers.gif -t assets/numbers.zts -p assets/numbers.ztp -c
 
 	$(ZVB_SDK_PATH)/tools/tiled2zeal/tiled2zeal.py -i assets/microbe.tmx -m assets/microbe.ztm
 	$(ZVB_SDK_PATH)/tools/tiled2zeal/tiled2zeal.py -i assets/splash.tmx -m assets/splash.ztm

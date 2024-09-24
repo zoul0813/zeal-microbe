@@ -9,8 +9,8 @@
 
 #pragma once
 
-#define DIRECTION_LEFT  1
-#define DIRECTION_RIGHT 2
+#define DIRECTION_LEFT  -1
+#define DIRECTION_RIGHT 1
 
 #define TILE_SIZE       (16 * 16)
 
@@ -29,7 +29,7 @@ typedef struct {
     gfx_sprite sprite;
     uint8_t sprite_index;
 
-    uint8_t direction;
+    int8_t direction;
     uint16_t score;
     uint8_t level;
 } Player;

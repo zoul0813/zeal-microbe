@@ -18,9 +18,9 @@ extern uint8_t _splash_end;
 
 
 gfx_error load_palette(gfx_context* ctx);
-gfx_error load_tiles(gfx_context* ctx);
-gfx_error load_numbers(gfx_context* ctx);
-gfx_error load_letters(gfx_context* ctx);
+gfx_error load_tiles(gfx_context* ctx, gfx_tileset_options* options);
+gfx_error load_numbers(gfx_context* ctx, gfx_tileset_options* options);
+gfx_error load_letters(gfx_context* ctx, gfx_tileset_options* options);
 
 uint8_t* get_tilemap_start(void);
 uint8_t* get_tilemap_end(void);
