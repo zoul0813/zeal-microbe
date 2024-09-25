@@ -6,6 +6,8 @@
 #include "microbe.h"
 #include "assets.h"
 #include "splash.h"
+#include "keyboard.h"
+#include "controller.h"
 #include "utils.h"
 
 void load_splash(void) {
