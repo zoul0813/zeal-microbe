@@ -9,18 +9,48 @@
 
 #pragma once
 
-#define DIRECTION_LEFT  -1
-#define DIRECTION_RIGHT 1
+#define DIRECTION_LEFT      -1
+#define DIRECTION_RIGHT     1
 
-#define TILE_SIZE       (16 * 16)
+#define SCREEN_WIDTH        320
+#define SCREEN_HEIGHT       240
+#define SPRITE_HEIGHT       16
+#define WIDTH               20
+#define HEIGHT              15
+
+#define TILEMAP_OFFSET      0x80
+#define EMPTY_TILE          0x7F
+
+#define BULLET_TILE         0x81
+#define MAX_BULLETS         4
+
+#define PLAYER_TILE         0x80
+#define PLAYER_SPEED        1
+#define PLAYER_BULLET       0
+
+#define INVADERS_LAYER      0
+#define UI_LAYER            MAX_BULLETS-1
+
+#define TILE_SIZE           (16 * 16)
+
+#define BOSS_INVADER_TL1 0x98 // 24 + 0x80
+#define BOSS_INVADER_TR1 0x99 // 25 + 0x80
+#define BOSS_INVADER_BL1 0xA8 // 40 + 0x80
+#define BOSS_INVADER_BR1 0xA9 // 41 + 0x80
+#define BOSS_INVADER_TL2 0x9E // 29 + 0x80
+#define BOSS_INVADER_TR2 0x9F // 30 + 0x80
+#define BOSS_INVADER_BL2 0xAE // 45 + 0x80
+#define BOSS_INVADER_BR2 0xAF // 46 + 0x80
 
 void init(void);
 void reset(void);
 void deinit(void);
-void load_tilemap(void);
-void load_splash(void);
+void load_tilemap(uint8_t* tilemap_start, uint16_t width, uint16_t height, uint8_t layer);
+
 void draw(void);
+void invader_shoot(uint8_t index);
 void update(void);
+void update_hud(void);
 uint8_t input(void);
 
 extern gfx_context vctx;
@@ -41,3 +71,10 @@ typedef struct {
     uint8_t direction;
 } Bullet;
 
+extern gfx_context vctx;
+extern Player player;
+extern Bullet bullets[MAX_BULLETS];
+extern uint8_t tiles[WIDTH * HEIGHT];
+extern uint16_t invaders;
+extern uint8_t controller_mode;
+extern uint16_t frames;
