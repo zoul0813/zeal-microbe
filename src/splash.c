@@ -1,5 +1,12 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#include <zos_sys.h>
+#include <zos_time.h>
 #include "microbe.h"
+#include "assets.h"
 #include "splash.h"
+#include "utils.h"
 
 void load_splash(void) {
     load_tilemap(get_splash_start(), WIDTH, HEIGHT, INVADERS_LAYER);
