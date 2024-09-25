@@ -44,10 +44,11 @@ int main(void) {
             frames = 0;
         }
 
-        update();
+        if(frames & 0x1) { // every other frame
+            update();
+            draw();
+        }
 
-        draw();
-        // update_hud();
 
         if(invaders == 0) {
             msleep(1500);
@@ -255,15 +256,15 @@ void update(void) {
     if(player.sprite.x < 16) player.sprite.x = 16;
     if(player.sprite.x > 320) player.sprite.x = 320;
 
-    if(frames == 32) {
+    if(frames == 31) {
         invader_shoot(1);
     }
 
-    if(frames == 96) {
+    if(frames == 95) {
         invader_shoot(2);
     }
 
-    if(frames == 144) {
+    if(frames == 143) {
         invader_shoot(3);
     }
 
