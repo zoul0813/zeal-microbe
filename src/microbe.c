@@ -33,7 +33,13 @@ uint16_t frames = 0;
 int main(void) {
     init();
 
+    Sound* sound = sound_play(SYSTEM_SOUND, 220, 3);
+    msleep(75);
+    sound_stop(sound);
     load_splash("press  start", get_splash_start());
+    sound = sound_play(SYSTEM_SOUND, 440, 3);
+    msleep(75);
+    sound_stop(sound);
 
     reset(true);
 
@@ -133,9 +139,8 @@ void init(void) {
     gfx_enable_screen(1);
 
     sound_init();
-    // Sound *sound = sound_play(SYSTEM_SOUND, 220, 3);
-    // msleep(50);
-    // sound_stop(sound);
+    Sound *s_invader = sound_get(INVADER_SOUND);
+    s_invader->waveform = WAV_NOISE;
 }
 
 void reset(uint8_t player_reset) {
@@ -182,6 +187,7 @@ void reset(uint8_t player_reset) {
 
 void deinit(void) {
     ioctl(DEV_STDOUT, CMD_RESET_SCREEN, NULL);
+    sound_deinit();
     // TODO: clear sprites
     // TODO: clear tilesets
 
@@ -222,7 +228,7 @@ uint8_t input(void) {
             bullets[PLAYER_BULLET].active = 1;
             bullets[PLAYER_BULLET].sprite.x = player.sprite.x;
             bullets[PLAYER_BULLET].sprite.y = player.sprite.y - 12;
-            sound_play(PLAYER_SOUND, 320, 3);
+            sound_play(PLAYER_SOUND, 180, 4);
         }
     }
     if(input & SNES_START ) return ACTION_PAUSE;
@@ -338,6 +344,7 @@ void update(void) {
                 // update score, decrement remaining invaders
                 invaders--;
                 player.score++;
+                sound_play(INVADER_SOUND, 400, 7);
                 update_hud();
             }
         } else { // invader bullet

@@ -16,6 +16,8 @@ typedef struct {
 
 
 zos_err_t sound_init(void);
+zos_err_t sound_deinit(void);
 Sound* sound_play(uint8_t voice, uint16_t freq, uint16_t duration);
-void sound_stop(Sound *sound)
+void sound_stop(Sound *sound);
 void sound_loop(void);
+Sound* sound_get(uint8_t voice);

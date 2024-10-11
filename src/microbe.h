@@ -30,18 +30,19 @@
 #define TILEMAP_OFFSET      0x80U
 #define EMPTY_TILE          0x7F
 
-#define SYSTEM_SOUND        VOICE0
+#define SYSTEM_SOUND        0
 
 #define BULLET_TILE         0x81
-#define BULLET_SOUND        VOICE2
+#define BULLET_SOUND        2
 #define MAX_BULLETS         4
 
 #define PLAYER_TILE         0x80
 #define PLAYER_SPEED        1
 #define PLAYER_BULLET       0
-#define PLAYER_SOUND        VOICE1
+#define PLAYER_SOUND        1
 
 #define INVADERS_LAYER      0
+#define INVADER_SOUND       3
 #define UI_LAYER            MAX_BULLETS-1
 
 #define TILE_SIZE           (16 * 16)

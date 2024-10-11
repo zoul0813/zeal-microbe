@@ -1,9 +1,11 @@
+#include <stdio.h>
+#include <stdint.h>
 #include <zvb_sound.h>
 #include <zos_errors.h>
 #include <zos_time.h>
 #include "sounds.h"
 
-Sound sounds[MAX_VOICES];
+static Sound sounds[MAX_VOICES];
 
 zos_err_t sound_init(void) {
   sounds[0].voice = VOICE0;
@@ -18,17 +20,30 @@ zos_err_t sound_init(void) {
   }
 
   zvb_sound_initialize(1);
-  zvb_sound_set_hold(VOICE0, 0);
-  zvb_sound_set_hold(VOICE1, 0);
-  zvb_sound_set_hold(VOICE2, 0);
-  zvb_sound_set_hold(VOICE3, 0);
-  zvb_sound_set_volume(VOL_100);
+
+  zvb_sound_set_voices(VOICE0 | VOICE1 | VOICE2 | VOICE3, 0, WAV_TRIANGLE);
+  zvb_sound_set_hold(VOICE0 | VOICE1 | VOICE2 | VOICE3, 0);
+
+  zvb_sound_set_volume(VOL_75);
 
   return ERR_SUCCESS;
 }
 
+zos_err_t sound_deinit(void) {
+  zvb_sound_set_voices(VOICE0 | VOICE1 | VOICE2 | VOICE3, 0, WAV_TRIANGLE);
+  zvb_sound_set_hold(VOICE0 | VOICE1 | VOICE2 | VOICE3, 1);
+  zvb_sound_set_volume(VOL_0);
+  return ERR_SUCCESS;
+}
+
+Sound* sound_get(uint8_t voice) {
+  if(voice >= MAX_VOICES) return NULL;
+  return &sounds[voice];
+}
+
+
 Sound* sound_play(uint8_t voice, uint16_t freq, uint16_t duration) {
-  if(voice >= MAX_VOICES) return;
+  if(voice >= MAX_VOICES) return NULL;
   Sound *sound = &sounds[voice];
   sound->freq = freq;
   sound->duration = duration;
@@ -41,7 +56,7 @@ Sound* sound_play(uint8_t voice, uint16_t freq, uint16_t duration) {
 
 void sound_stop(Sound *sound) {
   sound->remaining = 0;
-  zvb_sound_set_voices(sound->voice, 0, sound->waveform);
+  zvb_sound_set_voices(sound->voice, 0, WAV_SQUARE);
 }
 
 void sound_loop(void) {
@@ -54,6 +69,4 @@ void sound_loop(void) {
       }
     }
   }
-
-  return;
 }
