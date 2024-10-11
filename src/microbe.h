@@ -6,6 +6,7 @@
 
 // #include <stdint.h>
 #include <zvb_gfx.h>
+#include <zvb_sound.h>
 
 #pragma once
 
@@ -26,15 +27,19 @@
 #define WIDTH               20
 #define HEIGHT              15
 
-#define TILEMAP_OFFSET      0x80
+#define TILEMAP_OFFSET      0x80U
 #define EMPTY_TILE          0x7F
 
+#define SYSTEM_SOUND        VOICE0
+
 #define BULLET_TILE         0x81
+#define BULLET_SOUND        VOICE2
 #define MAX_BULLETS         4
 
 #define PLAYER_TILE         0x80
 #define PLAYER_SPEED        1
 #define PLAYER_BULLET       0
+#define PLAYER_SOUND        VOICE1
 
 #define INVADERS_LAYER      0
 #define UI_LAYER            MAX_BULLETS-1

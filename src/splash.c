@@ -16,7 +16,7 @@ void load_splash(const char* str, uint8_t* tilemap_start) {
     }
 
     char text[20];
-    sprintf(text, "            ");
+    sprintf(text, str);
 
     msleep(250);
     frames = 0;

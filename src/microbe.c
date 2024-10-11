@@ -16,6 +16,7 @@
 #include <zvb_hardware.h>
 #include <zos_video.h>
 #include "assets.h"
+#include "sounds.h"
 #include "microbe.h"
 #include "splash.h"
 #include "utils.h"
@@ -37,6 +38,7 @@ int main(void) {
     reset(true);
 
     while(true) {
+        sound_loop();
         uint8_t action = input();
         switch(action) {
             case ACTION_PAUSE: // start
@@ -129,6 +131,11 @@ void init(void) {
     if (err) exit(1);
 
     gfx_enable_screen(1);
+
+    sound_init();
+    // Sound *sound = sound_play(SYSTEM_SOUND, 220, 3);
+    // msleep(50);
+    // sound_stop(sound);
 }
 
 void reset(uint8_t player_reset) {
@@ -215,6 +222,7 @@ uint8_t input(void) {
             bullets[PLAYER_BULLET].active = 1;
             bullets[PLAYER_BULLET].sprite.x = player.sprite.x;
             bullets[PLAYER_BULLET].sprite.y = player.sprite.y - 12;
+            sound_play(PLAYER_SOUND, 320, 3);
         }
     }
     if(input & SNES_START ) return ACTION_PAUSE;
@@ -363,7 +371,7 @@ void update_hud(void) {
     uint8_t lives[3] = {EMPTY_TILE,EMPTY_TILE,EMPTY_TILE};
     for(uint8_t i = 0; i < sizeof(lives); i++) {
         if(i < player.lives) {
-            lives[i] = 5 + TILEMAP_OFFSET;
+            lives[i] = 5U + TILEMAP_OFFSET;
         }
     }
     gfx_tilemap_load(&vctx, lives, 3, UI_LAYER, (WIDTH / 2) - 2, HEIGHT-1);
