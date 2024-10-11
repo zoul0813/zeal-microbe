@@ -9,8 +9,16 @@
 
 #pragma once
 
+#define true                1
+#define false               0
+
 #define DIRECTION_LEFT      -1
 #define DIRECTION_RIGHT     1
+
+#define ACTION_NONE         0
+#define ACTION_PAUSE        1
+#define ACTION_CONTINUE     1
+#define ACTION_QUIT         10
 
 #define SCREEN_WIDTH        320
 #define SCREEN_HEIGHT       240
@@ -43,7 +51,7 @@
 #define BOSS_INVADER_BR2 0xAF // 46 + 0x80
 
 void init(void);
-void reset(void);
+void reset(uint8_t player_reset);
 void deinit(void);
 void load_tilemap(uint8_t* tilemap_start, uint16_t width, uint16_t height, uint8_t layer);
 
@@ -52,6 +60,8 @@ void invader_shoot(uint8_t index);
 void update(void);
 void update_hud(void);
 uint8_t input(void);
+
+void next_level(void);
 
 extern gfx_context vctx;
 
@@ -62,6 +72,7 @@ typedef struct {
     int8_t direction;
     uint16_t score;
     uint8_t level;
+    uint8_t lives;
 } Player;
 
 typedef struct {
@@ -76,5 +87,4 @@ extern Player player;
 extern Bullet bullets[MAX_BULLETS];
 extern uint8_t tiles[WIDTH * HEIGHT];
 extern uint16_t invaders;
-extern uint8_t controller_mode;
 extern uint16_t frames;

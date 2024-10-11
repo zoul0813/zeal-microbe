@@ -25,6 +25,8 @@ __sfr __at(0xd2) IO_PIO_CTRL_A;
 #define IO_LATCH    2
 #define IO_CLOCK    3
 
+static uint8_t connected = 1;
+
 zos_err_t controller_flush(void) {
     buttons = 0;
     return ERR_SUCCESS;
@@ -53,6 +55,15 @@ zos_err_t controller_init(void)
      */
     IO_PIO_DATA_A = 1 << IO_CLOCK;
 
+
+    // verify the controller is actually connected
+    uint16_t test = controller_read();
+    // if unconnected, we'll get back 0xFFFF (all buttons pressed)
+    if(test & 0xFFFF) {
+        connected = 0;
+        return ERR_NOT_SUPPORTED;
+    }
+
     return ERR_SUCCESS;
 }
 
@@ -69,15 +80,16 @@ uint16_t controller_read(void)
     IO_PIO_DATA_A = 1 << IO_CLOCK;
     // Now, the DATA lines contain the first button (B) state.
 
-    buttons = GET_DATA() == 0 ? 0x8000 : 0;
+    if(connected) buttons = GET_DATA() == 0 ? 0x8000 : 0;
     // process the remaining 1 buttons (last 4 are unused)
     for(uint8_t i = 0; i < 11; ++i) {
         buttons = buttons >> 1;
         CLOCK_ONCE(); // pulse the clock
-        buttons |= GET_DATA() == 0 ? 0x8000 : 0; // OR the current button
+        if(connected) buttons |= GET_DATA() == 0 ? 0x8000 : 0; // OR the current button
     }
     // shift over the 4 last unused bits
     buttons >>= 4;
 
+    if(!connected) return 0x0000;
     return buttons;
 }

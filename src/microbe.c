@@ -27,17 +27,26 @@ Player player;
 Bullet bullets[MAX_BULLETS];
 uint8_t tiles[WIDTH * HEIGHT];
 uint16_t invaders = 0;
-uint8_t controller_mode = 1;
 uint16_t frames = 0;
 
 int main(void) {
     init();
 
-    load_splash();
+    load_splash("press  start", get_splash_start());
 
-    reset();
+    reset(true);
 
-    while (input() != 0) {
+    while(true) {
+        uint8_t action = input();
+        switch(action) {
+            case ACTION_PAUSE: // start
+                load_splash("   paused   ", NULL);
+                continue;
+            case ACTION_QUIT: // quit
+                goto quit_game;
+        }
+
+
         gfx_wait_vblank(&vctx);
         frames++;
         if(frames > 256) {
@@ -51,15 +60,21 @@ int main(void) {
 
 
         if(invaders == 0) {
-            msleep(1500);
-            player.level++;
-            update_hud();
-            reset();
+            msleep(1000);
+            next_level();
+            reset(false);
+        }
+
+        if(player.lives < 1) {
+            msleep(500);
+            load_splash(" game  over ", NULL);
+            msleep(250);
+            reset(true);
         }
 
         gfx_wait_end_vblank(&vctx);
     }
-
+quit_game:
     deinit();
 
     printf("Game complete\n");
@@ -71,18 +86,12 @@ int main(void) {
 void init(void) {
     zos_err_t err = keyboard_init();
     if(err != ERR_SUCCESS) {
-        printf("Failed to init keyboard: %d", err);
+        printf("Failed to init keyboard: %d\n", err);
         exit(1);
     }
     err = controller_init();
-    if(err != ERR_SUCCESS) {
-        printf("Failed to init controller: %d", err);
-    }
-    // verify the controller is actually connected
-    uint16_t test = controller_read();
-    // if unconnected, we'll get back 0xFFFF (all buttons pressed)
-    if(test & 0xFFFF) {
-        controller_mode = 0;
+    if(err != ERR_SUCCESS && err != ERR_NOT_SUPPORTED) {
+        printf("Failed to init controller: %d\n", err);
     }
 
     /* Disable the screen to prevent artifacts from showing */
@@ -113,19 +122,25 @@ void init(void) {
     player.level = 1;
     player.sprite.tile = PLAYER_TILE;
     player.sprite_index = 0;
+    player.sprite.flags = SPRITE_BEHIND_FG;
+    player.sprite.x = ((WIDTH / 2) * 16) - 8;
+    player.sprite.y = 16 * 14;
+    err = gfx_sprite_render(&vctx, player.sprite_index, &player.sprite);
+    if (err) exit(1);
 
     gfx_enable_screen(1);
 }
 
-void reset(void) {
+void reset(uint8_t player_reset) {
     // Draw the tilemap
     load_tilemap(get_tilemap_start(), WIDTH, HEIGHT, INVADERS_LAYER);
 
     // Setup the player sprite
     player.sprite.x = ((WIDTH / 2) * 16) - 8;
     player.sprite.y = 16 * 14;
-    player.sprite.flags = SPRITE_NONE;
+    player.sprite.flags = SPRITE_BEHIND_FG;
     player.direction = 0;
+    player.lives = 3;
 
     gfx_error err = gfx_sprite_set_tile(&vctx, player.sprite_index, PLAYER_TILE);
     // TODO: error checking
@@ -138,7 +153,7 @@ void reset(void) {
         bullets[i].sprite_index = i + 1;
         bullets[i].sprite.x = player.sprite.x + (i * 16);
         bullets[i].sprite.y = SCREEN_HEIGHT + SPRITE_HEIGHT; // offscreen
-        bullets[i].sprite.flags = SPRITE_NONE;
+        bullets[i].sprite.flags = SPRITE_BEHIND_FG;
         bullets[i].sprite.tile = BULLET_TILE + i;
 
         err = gfx_sprite_set_tile(&vctx, bullets[i].sprite_index, BULLET_TILE);
@@ -148,6 +163,12 @@ void reset(void) {
     }
     // player bullet
     bullets[PLAYER_BULLET].direction = 0; // up
+
+    if(player_reset) {
+        player.level = 1;
+        player.score = 0;
+        player.lives = 3;
+    }
 
     update_hud();
 }
@@ -184,9 +205,7 @@ void load_tilemap(uint8_t* tilemap_start, uint16_t width, uint16_t height, uint8
 
 uint8_t input(void) {
     uint16_t input = keyboard_read();
-    if(controller_mode == 1) {
-        input |= controller_read();
-    }
+    input |= controller_read();
 
     player.direction = 0; // not moving
     if(input & SNES_LEFT) player.direction = DIRECTION_LEFT;
@@ -198,9 +217,14 @@ uint8_t input(void) {
             bullets[PLAYER_BULLET].sprite.y = player.sprite.y - 12;
         }
     }
-    if(input & SNES_START ) return 0;
+    if(input & SNES_START ) return ACTION_PAUSE;
+    if(input & (SNES_START | SNES_SELECT) ) return ACTION_QUIT;
 
-    return 255;
+    return ACTION_NONE;
+}
+
+void next_level(void) {
+    player.level++;
 }
 
 void draw(void) {
@@ -314,6 +338,8 @@ void update(void) {
                 if(y >= player.sprite.y - 16) {
                     bullet->active = 0;
                     bullet->sprite.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
+                    player.lives--;
+                    update_hud();
                 }
             }
         }
@@ -328,9 +354,17 @@ void update(void) {
 
 void update_hud(void) {
     char text[10];
-    sprintf(text, "scr: %03d", player.score);
-    nprint_string(&vctx, text, strlen(text), WIDTH - 8, HEIGHT - 1);
+    sprintf(text, "scr:%03d", player.score);
+    nprint_string(&vctx, text, strlen(text), WIDTH - 7, HEIGHT - 1);
 
-    sprintf(text, "lvl: %03d", player.level);
+    sprintf(text, "lvl:%03d", player.level);
     nprint_string(&vctx, text, strlen(text), 0, HEIGHT - 1);
+
+    uint8_t lives[3] = {EMPTY_TILE,EMPTY_TILE,EMPTY_TILE};
+    for(uint8_t i = 0; i < sizeof(lives); i++) {
+        if(i < player.lives) {
+            lives[i] = 5 + TILEMAP_OFFSET;
+        }
+    }
+    gfx_tilemap_load(&vctx, lives, 3, UI_LAYER, (WIDTH / 2) - 2, HEIGHT-1);
 }

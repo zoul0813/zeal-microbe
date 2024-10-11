@@ -86,12 +86,18 @@ uint16_t keyboard_read(void) {
               keys |= SNES_RIGHT;
             }
             break;
-
           case KB_KEY_ENTER:
             if(released) {
               keys &= ~SNES_START;
             } else {
               keys |= SNES_START;
+            }
+            break;
+          case KB_KEY_QUOTE:
+            if(released) {
+              keys &= ~SNES_SELECT;
+            } else {
+              keys |= SNES_SELECT;
             }
             break;
           case KB_KEY_SPACE:

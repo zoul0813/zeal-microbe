@@ -10,13 +10,10 @@
 #include "controller.h"
 #include "utils.h"
 
-void load_splash(void) {
-    load_tilemap(get_splash_start(), WIDTH, HEIGHT, INVADERS_LAYER);
-
-    player.sprite.x = ((WIDTH / 2) * 16) - 8;
-    player.sprite.y = 16 * 14;
-    gfx_error err = gfx_sprite_render(&vctx, player.sprite_index, &player.sprite);
-    // // TODO: error checking
+void load_splash(const char* str, uint8_t* tilemap_start) {
+    if(tilemap_start != NULL) {
+        load_tilemap(tilemap_start, WIDTH, HEIGHT, INVADERS_LAYER);
+    }
 
     char text[20];
     sprintf(text, "            ");
@@ -25,11 +22,11 @@ void load_splash(void) {
     frames = 0;
     uint8_t boss_frame = 0;
 
-    while(input() != 0) {
+    while(input() != ACTION_CONTINUE) {
         gfx_wait_vblank(&vctx);
         frames++;
 
-        if(frames % 48 == 0) {
+        if(tilemap_start != NULL && frames % 48 == 0) {
             // animate logo
             if(boss_frame == 0) {
                 gfx_tilemap_place(&vctx, BOSS_INVADER_TL1, INVADERS_LAYER, 11, 1);
@@ -49,14 +46,14 @@ void load_splash(void) {
             sprintf(text, "            ");
             frames = 0;
         } else if (frames == 96) {
-            sprintf(text, "press  start");
+            sprintf(text, str);
         }
 
         nprint_string(&vctx, text, strlen(text), 4, 11);
         gfx_wait_end_vblank(&vctx);
     } // wait for press
     msleep(100);
-    while(input() == 0) { } // wait for release
+    while(input() != ACTION_NONE) { } // wait for release
 
     sprintf(text, "            ");
     nprint_string(&vctx, text, strlen(text), 4, 11);
