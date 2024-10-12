@@ -25,10 +25,17 @@
 
 gfx_context vctx;
 Player player;
+Boss boss;
+uint8_t boss_frame = 0;
 Bullet bullets[MAX_BULLETS];
 uint8_t tiles[WIDTH * HEIGHT];
 uint16_t invaders = 0;
 uint16_t frames = 0;
+
+static uint8_t controller_mode = 1;
+static uint8_t tilemap_x = 0;
+static int8_t tilemap_scroll_direction = 1;
+static uint8_t tilemap_frame = 0;
 
 int main(void) {
     init();
@@ -36,10 +43,15 @@ int main(void) {
     Sound* sound = sound_play(SYSTEM_SOUND, 220, 3);
     msleep(75);
     sound_stop(sound);
-    load_splash("press  start", get_splash_start());
+    if(controller_mode) {
+        load_splash("press  start{|", get_splash_start());
+    } else {
+        load_splash(" press  start ", get_splash_start());
+    }
     sound = sound_play(SYSTEM_SOUND, 440, 3);
     msleep(75);
     sound_stop(sound);
+    sound->waveform = WAV_SAWTOOTH; // player hit
 
     reset(true);
 
@@ -48,12 +60,11 @@ int main(void) {
         uint8_t action = input();
         switch(action) {
             case ACTION_PAUSE: // start
-                load_splash("   paused   ", NULL);
+                load_splash("    paused    ", NULL);
                 continue;
             case ACTION_QUIT: // quit
                 goto quit_game;
         }
-
 
         gfx_wait_vblank(&vctx);
         frames++;
@@ -61,21 +72,25 @@ int main(void) {
             frames = 0;
         }
 
-        if(frames & 0x1) { // every other frame
-            update();
-            draw();
-        }
-
+        update();
+        draw();
 
         if(invaders == 0) {
             msleep(1000);
+            sound_stop_all();
             next_level();
             reset(false);
         }
 
+        if(boss.health > 0) boss.active = true; // TODO: remove
+        if(boss.health > 0 && invaders < 20) {
+            boss.active = true;
+        }
+
         if(player.lives < 1) {
             msleep(500);
-            load_splash(" game  over ", NULL);
+            sound_stop_all();
+            load_splash("  game  over  ", NULL);
             msleep(250);
             reset(true);
         }
@@ -98,8 +113,14 @@ void init(void) {
         exit(1);
     }
     err = controller_init();
-    if(err != ERR_SUCCESS && err != ERR_NOT_SUPPORTED) {
-        printf("Failed to init controller: %d\n", err);
+    if(err != ERR_SUCCESS) {
+        printf("Failed to init controller: %d", err);
+    }
+    // verify the controller is actually connected
+    uint16_t test = controller_read();
+    // if unconnected, we'll get back 0xFFFF (all buttons pressed)
+    if(test & 0xFFFF) {
+        controller_mode = 0;
     }
 
     /* Disable the screen to prevent artifacts from showing */
@@ -131,10 +152,32 @@ void init(void) {
     player.sprite.tile = PLAYER_TILE;
     player.sprite_index = 0;
     player.sprite.flags = SPRITE_BEHIND_FG;
-    player.sprite.x = ((WIDTH / 2) * 16) - 8;
-    player.sprite.y = 16 * 14;
+    player.sprite.x = ((WIDTH / 2) * SPRITE_WIDTH) - (SPRITE_WIDTH/2);
+    player.sprite.y = SPRITE_HEIGHT * 14;
     err = gfx_sprite_render(&vctx, player.sprite_index, &player.sprite);
     if (err) exit(1);
+
+    // BOSS INVADER
+    boss.active = false;
+    boss.direction = 1;
+    boss.sprite_index = BOSS_INDEX;
+
+    // Top Left
+    boss.tl.tile = BOSS_INVADER_TL1;
+    boss.tl.x = ((WIDTH / 2) * SPRITE_WIDTH) - (SPRITE_WIDTH/2);
+    boss.tl.y = 16;
+    // Top Right
+    boss.tr.tile = BOSS_INVADER_TR1;
+    boss.tr.x = boss.tl.x + SPRITE_WIDTH;
+    boss.tr.y = boss.tl.y;
+    // Bottom Left
+    boss.bl.tile = BOSS_INVADER_BL1;
+    boss.bl.x = boss.tl.x;
+    boss.bl.y = boss.tl.y + SPRITE_HEIGHT;
+    // Bottom Right
+    boss.br.tile = BOSS_INVADER_BR1;
+    boss.br.x = boss.bl.x + SPRITE_WIDTH;
+    boss.br.y = boss.bl.y;
 
     gfx_enable_screen(1);
 
@@ -145,7 +188,7 @@ void init(void) {
 
 void reset(uint8_t player_reset) {
     // Draw the tilemap
-    load_tilemap(get_tilemap_start(), WIDTH, HEIGHT, INVADERS_LAYER);
+    load_tilemap(get_tilemap_start(), WIDTH, HEIGHT * 2, INVADERS_LAYER);
 
     // Setup the player sprite
     player.sprite.x = ((WIDTH / 2) * 16) - 8;
@@ -154,9 +197,22 @@ void reset(uint8_t player_reset) {
     player.direction = 0;
     player.lives = 3;
 
-    gfx_error err = gfx_sprite_set_tile(&vctx, player.sprite_index, PLAYER_TILE);
+    gfx_error err;
+    err = gfx_sprite_set_tile(&vctx, player.sprite_index, PLAYER_TILE);
     // TODO: error checking
     err = gfx_sprite_render(&vctx, player.sprite_index, &player.sprite);
+    // TODO: error checking
+
+    boss.health = 3;
+    boss.direction = 1;
+    boss.active = 0;
+    err = gfx_sprite_set_tile(&vctx, boss.sprite_index, BOSS_INVADER_TL1);
+    // TODO: error checking
+    err = gfx_sprite_set_tile(&vctx, boss.sprite_index+1, BOSS_INVADER_TR1);
+    // TODO: error checking
+    err = gfx_sprite_set_tile(&vctx, boss.sprite_index+2, BOSS_INVADER_BL1);
+    // TODO: error checking
+    err = gfx_sprite_set_tile(&vctx, boss.sprite_index+3, BOSS_INVADER_BR1);
     // TODO: error checking
 
     for(uint8_t i = 0; i < MAX_BULLETS; i++) {
@@ -186,11 +242,26 @@ void reset(uint8_t player_reset) {
 }
 
 void deinit(void) {
+    zvb_ctrl_l0_scr_x_low = 0;
+    zvb_ctrl_l0_scr_x_high = 0;
+    zvb_ctrl_l0_scr_y_low = 0;
+    zvb_ctrl_l0_scr_y_high = 0;
     ioctl(DEV_STDOUT, CMD_RESET_SCREEN, NULL);
     sound_deinit();
-    // TODO: clear sprites
+
     // TODO: clear tilesets
 
+    // TODO: clear sprites
+    gfx_error err;
+    err = gfx_sprite_set_tile(&vctx, player.sprite_index, EMPTY_TILE);
+    // TODO: error checking
+    err = gfx_sprite_set_tile(&vctx, boss.sprite_index, EMPTY_TILE);
+    // TODO: error checking
+    err = gfx_sprite_set_tile(&vctx, boss.sprite_index+1, EMPTY_TILE);
+    // TODO: error checking
+    err = gfx_sprite_set_tile(&vctx, boss.sprite_index+2, EMPTY_TILE);
+    // TODO: error checking
+    err = gfx_sprite_set_tile(&vctx, boss.sprite_index+3, EMPTY_TILE);
 }
 
 void load_tilemap(uint8_t* tilemap_start, uint16_t width, uint16_t height, uint8_t layer) {
@@ -208,7 +279,7 @@ void load_tilemap(uint8_t* tilemap_start, uint16_t width, uint16_t height, uint8
     }
 
     invaders = 0;
-    for(uint16_t i = 0; i < width * height; i++) {
+    for(uint16_t i = 0; i < width * (height/2); i++) {
         uint8_t tile = tiles[i];
         if(tile > EMPTY_TILE) {
             invaders++;
@@ -218,7 +289,10 @@ void load_tilemap(uint8_t* tilemap_start, uint16_t width, uint16_t height, uint8
 
 uint8_t input(void) {
     uint16_t input = keyboard_read();
-    input |= controller_read();
+    if(controller_mode == 1) {
+        input |= controller_read();
+    }
+
 
     player.direction = 0; // not moving
     if(input & SNES_LEFT) player.direction = DIRECTION_LEFT;
@@ -246,6 +320,12 @@ void draw(void) {
 
     // faster to just update the `x` position
     err = gfx_sprite_set_x(&vctx, player.sprite_index, player.sprite.x);
+    // TODO: error checking?
+
+    err = gfx_sprite_render(&vctx, boss.sprite_index, &boss.tl);
+    err = gfx_sprite_render(&vctx, boss.sprite_index+1, &boss.tr);
+    err = gfx_sprite_render(&vctx, boss.sprite_index+2, &boss.bl);
+    err = gfx_sprite_render(&vctx, boss.sprite_index+3, &boss.br);
 
     for(uint8_t i = 0; i < MAX_BULLETS; i++) {
         // faster to just memcpy the whole thing since we're doing quite a bit?
@@ -273,7 +353,7 @@ void invader_shoot(uint8_t index) {
                 invader++;
                 if(invader >= rng) {
                     bullets[index].active = 1;
-                    bullets[index].sprite.x = (x * 16) + 16;
+                    bullets[index].sprite.x = ((x * 16) + 16) - tilemap_x;;
                     bullets[index].sprite.y = (y * 16) + 16;
                     return;
                     // goto invader_shoot_done;
@@ -306,8 +386,51 @@ void update(void) {
         invader_shoot(3);
     }
 
-    // TODO: animate the invaders
+#ifndef EMULATOR
+    // animate the invaders
     // move the tilemap left/right to show the different invader frames?
+    if((frames & 0x07) == 0x07) {
+        tilemap_x += tilemap_scroll_direction;
+        if(tilemap_x == ((SPRITE_WIDTH * 2) - 1)) tilemap_scroll_direction = -1;
+        if(tilemap_x == 0) tilemap_scroll_direction = 1;
+        zvb_ctrl_l0_scr_x_low = tilemap_x;
+        zvb_ctrl_l0_scr_x_high = 0;
+    }
+#endif
+    // toggle between the first and second frame of animation (top and bottom)
+    if((frames & 0x1F) == 0x1F) {
+#ifndef EMULATOR
+        tilemap_frame ^= 1; // toggle frame
+        zvb_ctrl_l0_scr_y_low = tilemap_frame ? SCREEN_HEIGHT - 1 : 0;
+        // zvb_ctrl_l0_scr_y_low = tilemap_frame ? SCREEN_HEIGHT : 0;
+        zvb_ctrl_l0_scr_y_high = 0;
+#endif
+
+        // always process, we'll only render when boss.active
+        if(boss_frame == 0) {
+            boss.tl.tile = BOSS_INVADER_TL1;
+            boss.tr.tile = BOSS_INVADER_TR1;
+            boss.bl.tile = BOSS_INVADER_BL1;
+            boss.br.tile = BOSS_INVADER_BR1;
+        } else {
+            boss.tl.tile = BOSS_INVADER_TL2;
+            boss.tr.tile = BOSS_INVADER_TR2;
+            boss.bl.tile = BOSS_INVADER_BL2;
+            boss.br.tile = BOSS_INVADER_BR2;
+        }
+        boss_frame ^= 1; // toggle
+    }
+
+    if((boss.active && (frames & 0x01) == 0x01)) {
+        boss.tl.x += boss.direction;
+        boss.tr.x += boss.direction;
+        boss.bl.x += boss.direction;
+        boss.br.x += boss.direction;
+
+        if(boss.tl.x < 32) boss.direction = 1;
+        if(boss.tl.x > SCREEN_WIDTH - 48) boss.direction = -1;
+        // if(boss.tl.x > 64) boss.direction = -1;
+    }
 
     uint8_t index = MAX_BULLETS;
     for(index = 0; index < MAX_BULLETS; index++) {
@@ -322,9 +445,40 @@ void update(void) {
         uint16_t x = bullet->sprite.x;
         uint16_t y = bullet->sprite.y;
         if(index == 0) { // player bullet
+            // offset the origin
+            x += 8;
+            y += 8;
+
+            // did we hit the boss?
+            if(boss.active) {
+                if(x >= boss.tl.x && x <= boss.tr.x) {
+                    if(y < (boss.bl.y + SPRITE_HEIGHT)) {
+                        // HIT
+                        boss.health--;
+                        bullet->sprite.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
+                        bullet->active = 0;
+                        if(boss.health == 0) {
+                            player.score += 10;
+                            boss.active = false;
+                            boss.tl.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
+                            boss.tr.y = boss.tl.y;
+                            boss.bl.y = boss.tl.y + SPRITE_HEIGHT;
+                            boss.br.y = boss.tl.y + SPRITE_HEIGHT;
+                            update_hud();
+                            sound_play(PLAYER_SOUND, 220, 6);
+                        } else {
+                            sound_play(PLAYER_SOUND, 440, 6);
+                        }
+                    }
+                }
+            }
+
+
+            // offset x to account for horizonal movement
+            x += tilemap_x;
             // convert x,y to tile position
-            x = ((x + 8) >> 4) - 1;
-            y = ((y + 8) >> 4) - 1;
+            x = (x >> 4) - 1;
+            y = (y >> 4) - 1;
 
             uint16_t offset = (y * WIDTH) + x;
             uint8_t tile = tiles[offset];
@@ -334,6 +488,7 @@ void update(void) {
                 // found an invader
                 tiles[offset] = EMPTY_TILE;
                 gfx_tilemap_place(&vctx, EMPTY_TILE, INVADERS_LAYER, x, y);
+                gfx_tilemap_place(&vctx, EMPTY_TILE, INVADERS_LAYER, x, y + HEIGHT);
                 // update the offscreen animation tile
                 // gfx_tilemap_place(&vctx, EMPTY_TILE, INVADERS_LAYER, x + WIDTH, y + HEIGHT);
 
@@ -354,6 +509,7 @@ void update(void) {
                     bullet->active = 0;
                     bullet->sprite.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
                     player.lives--;
+                    sound_play(SYSTEM_SOUND, 360, 7);
                     update_hud();
                 }
             }

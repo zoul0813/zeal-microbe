@@ -24,8 +24,11 @@
 #define SCREEN_WIDTH        320
 #define SCREEN_HEIGHT       240
 #define SPRITE_HEIGHT       16
+#define SPRITE_WIDTH        16
 #define WIDTH               20
 #define HEIGHT              15
+#define SCROLL_WIDTH        1280
+#define SCROLL_HEIGHT       640
 
 #define TILEMAP_OFFSET      0x80U
 #define EMPTY_TILE          0x7F
@@ -47,6 +50,7 @@
 
 #define TILE_SIZE           (16 * 16)
 
+#define BOSS_INDEX       32
 #define BOSS_INVADER_TL1 0x98 // 24 + 0x80
 #define BOSS_INVADER_TR1 0x99 // 25 + 0x80
 #define BOSS_INVADER_BL1 0xA8 // 40 + 0x80
@@ -88,8 +92,21 @@ typedef struct {
     uint8_t direction;
 } Bullet;
 
+typedef struct {
+    uint8_t active;
+    uint8_t health;
+    uint8_t sprite_index;
+    gfx_sprite tl;
+    gfx_sprite tr;
+    gfx_sprite bl;
+    gfx_sprite br;
+    int8_t direction;
+} Boss;
+
 extern gfx_context vctx;
 extern Player player;
+extern Boss boss;
+extern uint8_t boss_frame;
 extern Bullet bullets[MAX_BULLETS];
 extern uint8_t tiles[WIDTH * HEIGHT];
 extern uint16_t invaders;

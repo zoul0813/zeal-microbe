@@ -20,13 +20,13 @@ void load_splash(const char* str, uint8_t* tilemap_start) {
 
     msleep(250);
     frames = 0;
-    uint8_t boss_frame = 0;
 
     while(input() != ACTION_CONTINUE) {
         gfx_wait_vblank(&vctx);
         frames++;
+        if(frames > 59) frames = 0;
 
-        if(tilemap_start != NULL && frames % 48 == 0) {
+        if(tilemap_start != NULL && frames % 30 == 0) {
             // animate logo
             if(boss_frame == 0) {
                 gfx_tilemap_place(&vctx, BOSS_INVADER_TL1, INVADERS_LAYER, 11, 1);
@@ -42,21 +42,20 @@ void load_splash(const char* str, uint8_t* tilemap_start) {
             boss_frame ^= 1; // toggle
         }
 
-        if(frames > 192) {
-            sprintf(text, "            ");
-            frames = 0;
-        } else if (frames == 96) {
+        if(frames > 29) {
+            sprintf(text, "              ");
+        } else {
             sprintf(text, str);
         }
 
-        nprint_string(&vctx, text, strlen(text), 4, 11);
+        nprint_string(&vctx, text, strlen(text), 3, 11);
         gfx_wait_end_vblank(&vctx);
     } // wait for press
     msleep(100);
     while(input() != ACTION_NONE) { } // wait for release
 
-    sprintf(text, "            ");
-    nprint_string(&vctx, text, strlen(text), 4, 11);
+    sprintf(text, "              ");
+    nprint_string(&vctx, text, strlen(text), 3, 11);
 
     keyboard_flush(); // peace of mind
     controller_flush(); // peace of mind

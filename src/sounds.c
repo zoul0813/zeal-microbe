@@ -21,8 +21,8 @@ zos_err_t sound_init(void) {
 
   zvb_sound_initialize(1);
 
-  zvb_sound_set_voices(VOICE0 | VOICE1 | VOICE2 | VOICE3, 0, WAV_TRIANGLE);
-  zvb_sound_set_hold(VOICE0 | VOICE1 | VOICE2 | VOICE3, 0);
+  zvb_sound_set_voices(VOICEALL, 0, WAV_TRIANGLE);
+  zvb_sound_set_hold(VOICEALL, 0);
 
   zvb_sound_set_volume(VOL_75);
 
@@ -30,8 +30,8 @@ zos_err_t sound_init(void) {
 }
 
 zos_err_t sound_deinit(void) {
-  zvb_sound_set_voices(VOICE0 | VOICE1 | VOICE2 | VOICE3, 0, WAV_TRIANGLE);
-  zvb_sound_set_hold(VOICE0 | VOICE1 | VOICE2 | VOICE3, 1);
+  zvb_sound_set_voices(VOICEALL, 0, WAV_SQUARE);
+  zvb_sound_set_hold(VOICEALL, 1);
   zvb_sound_set_volume(VOL_0);
   return ERR_SUCCESS;
 }
@@ -57,6 +57,10 @@ Sound* sound_play(uint8_t voice, uint16_t freq, uint16_t duration) {
 void sound_stop(Sound *sound) {
   sound->remaining = 0;
   zvb_sound_set_voices(sound->voice, 0, WAV_SQUARE);
+}
+
+void sound_stop_all(void) {
+  zvb_sound_set_voices(VOICEALL, 0, WAV_SQUARE);
 }
 
 void sound_loop(void) {
