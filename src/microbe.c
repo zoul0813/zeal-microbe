@@ -459,7 +459,7 @@ void update(void) {
 
             // did we hit the boss?
             if(boss.active) {
-                if(x >= boss.tl.x && x <= boss.tr.x) {
+                if(x >= boss.tl.x && x <= boss.tr.x + SPRITE_WIDTH) {
                     if(y < (boss.bl.y + SPRITE_HEIGHT)) {
                         // HIT
                         boss.health--;
