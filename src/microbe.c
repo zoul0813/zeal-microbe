@@ -56,6 +56,7 @@ int main(void) {
     reset(true);
 
     while(true) {
+        DEBUG_COUNT(2);
         sound_loop();
         uint8_t action = input();
         switch(action) {
@@ -66,14 +67,20 @@ int main(void) {
                 goto quit_game;
         }
 
-        gfx_wait_vblank(&vctx);
         frames++;
-        if(frames > 256) {
-            frames = 0;
-        }
+        if(frames > 240) frames = 0;
 
+        DEBUG_COUNT(4);
         update();
+        DEBUG_COUNT(4);
+
+        gfx_wait_vblank(&vctx);
+        DEBUG_COUNT(1);
+        DEBUG_COUNT(3);
         draw();
+        DEBUG_COUNT(3);
+        gfx_wait_end_vblank(&vctx);
+        DEBUG_COUNT(1);
 
         if(invaders == 0) {
             msleep(1000);
@@ -94,8 +101,7 @@ int main(void) {
             msleep(250);
             reset(true);
         }
-
-        gfx_wait_end_vblank(&vctx);
+        DEBUG_COUNT(2);
     }
 quit_game:
     deinit();
@@ -318,6 +324,12 @@ void next_level(void) {
 void draw(void) {
     gfx_error err = GFX_SUCCESS; // TODO: return this?
 
+    // tilemap offset
+    zvb_ctrl_l0_scr_x_low = tilemap_x;
+    zvb_ctrl_l0_scr_x_high = 0;
+    zvb_ctrl_l0_scr_y_low = tilemap_frame ? SCREEN_HEIGHT - 1 : 0;
+    zvb_ctrl_l0_scr_y_high = 0;
+
     // faster to just update the `x` position
     err = gfx_sprite_set_x(&vctx, player.sprite_index, player.sprite.x);
     // TODO: error checking?
@@ -393,17 +405,13 @@ void update(void) {
         tilemap_x += tilemap_scroll_direction;
         if(tilemap_x == ((SPRITE_WIDTH * 2) - 1)) tilemap_scroll_direction = -1;
         if(tilemap_x == 0) tilemap_scroll_direction = 1;
-        zvb_ctrl_l0_scr_x_low = tilemap_x;
-        zvb_ctrl_l0_scr_x_high = 0;
+
     }
 #endif
     // toggle between the first and second frame of animation (top and bottom)
     if((frames & 0x1F) == 0x1F) {
 #ifndef EMULATOR
         tilemap_frame ^= 1; // toggle frame
-        zvb_ctrl_l0_scr_y_low = tilemap_frame ? SCREEN_HEIGHT - 1 : 0;
-        // zvb_ctrl_l0_scr_y_low = tilemap_frame ? SCREEN_HEIGHT : 0;
-        zvb_ctrl_l0_scr_y_high = 0;
 #endif
 
         // always process, we'll only render when boss.active
