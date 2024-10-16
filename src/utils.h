@@ -11,9 +11,9 @@
 
 #ifdef EMULATOR
 __sfr __at(0x86) debug_register; // t-state counter
-#define DEBUG_COUNT(counter) debug_register = counter;
+#define TSTATE_LOG(counter) debug_register = counter;
 #else
-#define DEBUG_COUNT(counter)
+#define TSTATE_LOGT(counter)
 #endif
 
 void print_string(gfx_context* ctx, const char* str, uint8_t x, uint8_t y);

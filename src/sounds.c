@@ -13,7 +13,7 @@ zos_err_t sound_init(void) {
   sounds[2].voice = VOICE2;
   sounds[3].voice = VOICE3;
   for(uint8_t i = 0; i < MAX_VOICES; i++) {
-    sounds[i].waveform = WAV_SAWTOOTH;
+    sounds[i].waveform = WAV_SQUARE;
     sounds[i].freq = 440;
     sounds[i].duration = 0;
     sounds[i].remaining = 0;
@@ -21,7 +21,7 @@ zos_err_t sound_init(void) {
 
   zvb_sound_initialize(1);
 
-  zvb_sound_set_voices(VOICEALL, 0, WAV_TRIANGLE);
+  zvb_sound_set_voices(VOICEALL, 0, WAV_SQUARE);
   zvb_sound_set_hold(VOICEALL, 0);
 
   zvb_sound_set_volume(VOL_75);

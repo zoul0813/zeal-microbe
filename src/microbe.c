@@ -40,7 +40,7 @@ static uint8_t tilemap_frame = 0;
 int main(void) {
     init();
 
-    Sound* sound = sound_play(SYSTEM_SOUND, 220, 3);
+    Sound* sound = sound_play(SYSTEM_SOUND, 220, 0);
     msleep(75);
     sound_stop(sound);
     if(controller_mode) {
@@ -56,7 +56,7 @@ int main(void) {
     reset(true);
 
     while(true) {
-        DEBUG_COUNT(2);
+        TSTATE_LOG(2);
         sound_loop();
         uint8_t action = input();
         switch(action) {
@@ -70,17 +70,17 @@ int main(void) {
         frames++;
         if(frames > 240) frames = 0;
 
-        DEBUG_COUNT(4);
+        TSTATE_LOG(4);
         update();
-        DEBUG_COUNT(4);
+        TSTATE_LOG(4);
 
         gfx_wait_vblank(&vctx);
-        DEBUG_COUNT(1);
-        DEBUG_COUNT(3);
+        TSTATE_LOG(1);
+        TSTATE_LOG(3);
         draw();
-        DEBUG_COUNT(3);
+        TSTATE_LOG(3);
         gfx_wait_end_vblank(&vctx);
-        DEBUG_COUNT(1);
+        TSTATE_LOG(1);
 
         if(invaders == 0) {
             msleep(1000);
@@ -101,7 +101,7 @@ int main(void) {
             msleep(250);
             reset(true);
         }
-        DEBUG_COUNT(2);
+        TSTATE_LOG(2);
     }
 quit_game:
     deinit();
