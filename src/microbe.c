@@ -56,7 +56,6 @@ int main(void) {
     reset(true);
 
     while(true) {
-        TSTATE_LOG(2);
         sound_loop();
         uint8_t action = input();
         switch(action) {
@@ -70,17 +69,11 @@ int main(void) {
         frames++;
         if(frames > 240) frames = 0;
 
-        TSTATE_LOG(4);
         update();
-        TSTATE_LOG(4);
 
         gfx_wait_vblank(&vctx);
-        TSTATE_LOG(1);
-        TSTATE_LOG(3);
         draw();
-        TSTATE_LOG(3);
         gfx_wait_end_vblank(&vctx);
-        TSTATE_LOG(1);
 
         if(invaders == 0) {
             msleep(1000);
@@ -89,9 +82,12 @@ int main(void) {
             reset(false);
         }
 
-        if(boss.health > 0) boss.active = true; // TODO: remove
-        if(boss.health > 0 && invaders < 20) {
+        if(!boss.active && boss.health > 0 && invaders < 20) {
             boss.active = true;
+            boss.tl.y = SPRITE_HEIGHT;
+            boss.tr.y = boss.tl.y;
+            boss.bl.y = boss.tl.y + SPRITE_HEIGHT;
+            boss.br.y = boss.bl.y;
         }
 
         if(player.lives < 1) {
@@ -101,7 +97,6 @@ int main(void) {
             msleep(250);
             reset(true);
         }
-        TSTATE_LOG(2);
     }
 quit_game:
     deinit();
@@ -171,19 +166,15 @@ void init(void) {
     // Top Left
     boss.tl.tile = BOSS_INVADER_TL1;
     boss.tl.x = ((WIDTH / 2) * SPRITE_WIDTH) - (SPRITE_WIDTH/2);
-    boss.tl.y = 16;
     // Top Right
     boss.tr.tile = BOSS_INVADER_TR1;
     boss.tr.x = boss.tl.x + SPRITE_WIDTH;
-    boss.tr.y = boss.tl.y;
     // Bottom Left
     boss.bl.tile = BOSS_INVADER_BL1;
     boss.bl.x = boss.tl.x;
-    boss.bl.y = boss.tl.y + SPRITE_HEIGHT;
     // Bottom Right
     boss.br.tile = BOSS_INVADER_BR1;
     boss.br.x = boss.bl.x + SPRITE_WIDTH;
-    boss.br.y = boss.bl.y;
 
     gfx_enable_screen(1);
 
@@ -212,6 +203,12 @@ void reset(uint8_t player_reset) {
     boss.health = 3;
     boss.direction = 1;
     boss.active = 0;
+
+    boss.tl.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
+    boss.tr.y = boss.tl.y;
+    boss.bl.y = boss.tl.y + SPRITE_HEIGHT;
+    boss.br.y = boss.bl.y;
+
     err = gfx_sprite_set_tile(&vctx, boss.sprite_index, BOSS_INVADER_TL1);
     // TODO: error checking
     err = gfx_sprite_set_tile(&vctx, boss.sprite_index+1, BOSS_INVADER_TR1);
