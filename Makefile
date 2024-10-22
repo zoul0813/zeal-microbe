@@ -25,12 +25,14 @@ endif
 
 # Directory where source files are and where the binaries will be put
 INPUT_DIR=src
+ASSETS_DIR=assets
 OUTPUT_DIR=bin
 
 # Specify the files to compile and the name of the final binary
 SRCS=$(wildcard $(INPUT_DIR)/*.c)
+ASEPRITE_SRCS=$(wildcard $(ASSETS_DIR)/*.aseprite)
+TILEMAP_SRCS=$(wildcard $(ASSETS_DIR)/*.tmx)
 BIN=microbe.bin
-
 
 # Include directory containing Zeal 8-bit OS header files.
 ifndef ZOS_PATH
@@ -68,11 +70,14 @@ BIN_HEX=$(patsubst %.bin,%.ihx,$(BIN))
 # Generate the rel names for C source files. Only keep the file names, and add output dir prefix.
 SRCS_REL=$(subst $(INPUT_DIR)/,$(OUTPUT_DIR)/,$(patsubst %.c,%.rel,$(SRCS)))
 SRCS_ASM_REL=$(subst $(INPUT_DIR)/,$(OUTPUT_DIR)/,$(patsubst %.asm,%.rel,$(SRCS)))
+GIF_SRCS=$(ASEPRITE_SRCS:.aseprite=.gif)
+ZTS_SRCS=$(GIF_SRCS:.gif=.zts)
+ZTM_SRCS=$(TILEMAP_SRCS:.tmx=.ztm)
 
 
 .PHONY: all clean
 
-all: clean $(OUTPUT_DIR) $(OUTPUT_DIR)/$(BIN_HEX) $(OUTPUT_DIR)/$(BIN)
+all: clean $(GIF_SRCS) $(ZTS_SRCS) $(ZTM_SRCS) $(OUTPUT_DIR) $(OUTPUT_DIR)/$(BIN_HEX) $(OUTPUT_DIR)/$(BIN)
 	@bash -c 'echo -e "\x1b[32;1mSuccess, binary generated: $(OUTPUT_DIR)/$(BIN)\x1b[0m"'
 	@echo "uartrcv $$($(STAT_BYTES) $(OUTPUT_DIR)/$(BIN)) $(BIN)"
 
@@ -94,19 +99,14 @@ $(OUTPUT_DIR)/$(BIN_HEX): $(CRT_REL) $(SRCS_REL)
 $(OUTPUT_DIR)/$(BIN):
 	$(OBJCOPY) --input-target=ihex --output-target=binary $(OUTPUT_DIR)/$(BIN_HEX) $(OUTPUT_DIR)/$(BIN)
 
-regenerate:
-	@if [ -f $(ASEPRITE_PATH) ]; then $(ASEPRITE_PATH) -b --sheet assets/tiles.gif assets/tiles.aseprite; fi
-	@if [ -f $(ASEPRITE_PATH) ]; then $(ASEPRITE_PATH) -b --sheet assets/letters.gif assets/letters.aseprite; fi
-	@if [ -f $(ASEPRITE_PATH) ]; then $(ASEPRITE_PATH) -b --sheet assets/numbers.gif assets/numbers.aseprite; fi
+%.gif: %.aseprite
+	if [ -f $(ASEPRITE_PATH) ]; then $(ASEPRITE_PATH) -b --sheet $@ $<; fi
 
-	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i assets/tiles.gif -t assets/tiles.zts -p assets/tiles.ztp -c
-	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i assets/letters.gif -t assets/letters.zts -p assets/letters.ztp -c
-	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i assets/numbers.gif -t assets/numbers.zts -p assets/numbers.ztp -c
+%.zts: %.gif
+	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i $< -t $@ -p $(patsubst %.zts,%.ztp,$@) -c
 
-	$(ZVB_SDK_PATH)/tools/tiled2zeal/tiled2zeal.py -i assets/microbe.tmx -m assets/microbe.ztm
-	$(ZVB_SDK_PATH)/tools/tiled2zeal/tiled2zeal.py -i assets/splash.tmx -m assets/splash.ztm
-
-generate: regenerate all
+%.ztm: %.tmx
+	$(ZVB_SDK_PATH)/tools/tiled2zeal/tiled2zeal.py -i $< -m $@
 
 clean:
 	rm -fr bin/
