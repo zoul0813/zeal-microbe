@@ -95,9 +95,9 @@ $(OUTPUT_DIR)/$(BIN):
 	$(OBJCOPY) --input-target=ihex --output-target=binary $(OUTPUT_DIR)/$(BIN_HEX) $(OUTPUT_DIR)/$(BIN)
 
 regenerate:
-	$(ASEPRITE_PATH) -b --sheet assets/tiles.gif assets/tiles.aseprite
-	$(ASEPRITE_PATH) -b --sheet assets/letters.gif assets/letters.aseprite
-	$(ASEPRITE_PATH) -b --sheet assets/numbers.gif assets/numbers.aseprite
+	@if [ -f $(ASEPRITE_PATH) ]; then $(ASEPRITE_PATH) -b --sheet assets/tiles.gif assets/tiles.aseprite; fi
+	@if [ -f $(ASEPRITE_PATH) ]; then $(ASEPRITE_PATH) -b --sheet assets/letters.gif assets/letters.aseprite; fi
+	@if [ -f $(ASEPRITE_PATH) ]; then $(ASEPRITE_PATH) -b --sheet assets/numbers.gif assets/numbers.aseprite; fi
 
 	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i assets/tiles.gif -t assets/tiles.zts -p assets/tiles.ztp -c
 	$(ZVB_SDK_PATH)/tools/zeal2gif/gif2zeal.py -i assets/letters.gif -t assets/letters.zts -p assets/letters.ztp -c
@@ -110,3 +110,6 @@ generate: regenerate all
 
 clean:
 	rm -fr bin/
+
+cleanall: clean
+	rm -rf assets/*.zt[psm]
