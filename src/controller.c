@@ -15,17 +15,22 @@
 __sfr __at(0xd0) IO_PIO_DATA_A;
 __sfr __at(0xd2) IO_PIO_CTRL_A;
 
-#define CLOCK_ONCE() do { IO_PIO_DATA_A = 0; IO_PIO_DATA_A = 1 << IO_CLOCK; } while (0)
-#define GET_DATA()   (IO_PIO_DATA_A & (1 << IO_DATA))
+#define CLOCK_ONCE()                   \
+    do {                               \
+        IO_PIO_DATA_A = 0;             \
+        IO_PIO_DATA_A = 1 << IO_CLOCK; \
+    } while (0)
+#define GET_DATA() (IO_PIO_DATA_A & (1 << IO_DATA))
 
-#define IO_PIO_DISABLE_INT  0x03
-#define IO_PIO_BITCTRL      0xcf
+#define IO_PIO_DISABLE_INT 0x03
+#define IO_PIO_BITCTRL     0xcf
 
-#define IO_DATA     0
-#define IO_LATCH    2
-#define IO_CLOCK    3
+#define IO_DATA  0
+#define IO_LATCH 2
+#define IO_CLOCK 3
 
-zos_err_t controller_flush(void) {
+zos_err_t controller_flush(void)
+{
     buttons = 0;
     return ERR_SUCCESS;
 }
@@ -33,9 +38,9 @@ zos_err_t controller_flush(void) {
 zos_err_t controller_init(void)
 {
     /**
-    * Initialize the user port (port A) of the PIO
-    * Set it to bit control mode so that each I/O can be controlled independently.
-    */
+     * Initialize the user port (port A) of the PIO
+     * Set it to bit control mode so that each I/O can be controlled independently.
+     */
     IO_PIO_CTRL_A = IO_PIO_BITCTRL;
     /**
      * After setting the port as a bit-controlled one, we need to give a bitmask of
@@ -71,9 +76,9 @@ uint16_t controller_read(void)
 
     buttons = GET_DATA() == 0 ? 0x8000 : 0;
     // process the remaining 1 buttons (last 4 are unused)
-    for(uint8_t i = 0; i < 11; ++i) {
+    for (uint8_t i = 0; i < 11; ++i) {
         buttons = buttons >> 1;
-        CLOCK_ONCE(); // pulse the clock
+        CLOCK_ONCE();                            // pulse the clock
         buttons |= GET_DATA() == 0 ? 0x8000 : 0; // OR the current button
     }
     // shift over the 4 last unused bits

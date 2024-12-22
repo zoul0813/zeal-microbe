@@ -10,8 +10,9 @@
 #include "controller.h"
 #include "utils.h"
 
-void load_splash(const char* str, uint8_t* tilemap_start) {
-    if(tilemap_start != NULL) {
+void load_splash(const char* str, uint8_t* tilemap_start)
+{
+    if (tilemap_start != NULL) {
         load_tilemap(tilemap_start, WIDTH, HEIGHT, INVADERS_LAYER);
     }
 
@@ -21,14 +22,15 @@ void load_splash(const char* str, uint8_t* tilemap_start) {
     msleep(250);
     frames = 0;
 
-    while(input() != ACTION_CONTINUE) {
+    while (input() != ACTION_CONTINUE) {
         gfx_wait_vblank(&vctx);
         frames++;
-        if(frames > 59) frames = 0;
+        if (frames > 59)
+            frames = 0;
 
-        if(tilemap_start != NULL && frames % 30 == 0) {
+        if (tilemap_start != NULL && frames % 30 == 0) {
             // animate logo
-            if(boss_frame == 0) {
+            if (boss_frame == 0) {
                 gfx_tilemap_place(&vctx, BOSS_INVADER_TL1, INVADERS_LAYER, 11, 1);
                 gfx_tilemap_place(&vctx, BOSS_INVADER_TR1, INVADERS_LAYER, 12, 1);
                 gfx_tilemap_place(&vctx, BOSS_INVADER_BL1, INVADERS_LAYER, 11, 2);
@@ -42,7 +44,7 @@ void load_splash(const char* str, uint8_t* tilemap_start) {
             boss_frame ^= 1; // toggle
         }
 
-        if(frames > 29) {
+        if (frames > 29) {
             sprintf(text, "              ");
         } else {
             sprintf(text, str);
@@ -52,11 +54,11 @@ void load_splash(const char* str, uint8_t* tilemap_start) {
         gfx_wait_end_vblank(&vctx);
     } // wait for press
     msleep(100);
-    while(input() != ACTION_NONE) { } // wait for release
+    while (input() != ACTION_NONE) {} // wait for release
 
     sprintf(text, "              ");
     nprint_string(&vctx, text, strlen(text), 3, 11);
 
-    keyboard_flush(); // peace of mind
+    keyboard_flush();   // peace of mind
     controller_flush(); // peace of mind
 }

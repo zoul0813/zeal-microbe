@@ -1,6 +1,5 @@
 #include "utils.h"
 #include <string.h>
-#include "microbe.h"
 
 void print_string(gfx_context* ctx, const char* str, uint8_t x, uint8_t y)
 {
@@ -16,20 +15,18 @@ void nprint_string(gfx_context* ctx, const char* str, uint8_t len, uint8_t x, ui
  * Retrieve the value of the R register
  *
  * This is can be used for a quick dirty "random" value
-*/
+ */
 char rand8_quick(void) __naked
 {
-    __asm__(
-    "ld a, r\n"
-    "ret\n"
-    );
+    __asm__("ld a, r\n"
+            "ret\n");
 }
 
 /**
  * Return an 8-bit pseudo-random number
  *
  * This is a combination of an LFSR w/ Counter
-*/
+ */
 char rand8(void) __naked
 {
     // credit: https://spectrumcomputing.co.uk/forums/viewtopic.php?t=4571
@@ -63,14 +60,12 @@ char rand8(void) __naked
     // ;       then congatulations, you might have a True RNG :)
     // ;-------------------------------------------------------------------------------
 
-    __asm__(
-    "            ;opcode cc\n"
-    "add hl,hl   ; 29    11\n"
-    "sbc a,a     ; 9F     4\n"
-    "and #0x2D   ; E62D   7\n"
-    "xor l       ; AD     4\n"
-    "ld l,a      ; 6F     4\n"
-    "ld a,r      ; ED5F   9\n"
-    "add a,h     ; 84     4\n"
-    );
+    __asm__("            ;opcode cc\n"
+            "add hl,hl   ; 29    11\n"
+            "sbc a,a     ; 9F     4\n"
+            "and #0x2D   ; E62D   7\n"
+            "xor l       ; AD     4\n"
+            "ld l,a      ; 6F     4\n"
+            "ld a,r      ; ED5F   9\n"
+            "add a,h     ; 84     4\n");
 }

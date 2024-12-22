@@ -27,19 +27,23 @@ gfx_error load_letters(gfx_context* ctx, gfx_tileset_options* options)
     return gfx_tileset_load(ctx, &_letters_start, size, options);
 }
 
-uint8_t* get_tilemap_start(void) {
+uint8_t* get_tilemap_start(void)
+{
     return &_tilemap_start;
 }
 
-uint8_t* get_tilemap_end(void) {
+uint8_t* get_tilemap_end(void)
+{
     return &_tilemap_end;
 }
 
-uint8_t* get_splash_start(void) {
+uint8_t* get_splash_start(void)
+{
     return &_splash_start;
 }
 
-uint8_t* get_splash_end(void) {
+uint8_t* get_splash_end(void)
+{
     return &_splash_end;
 }
 
