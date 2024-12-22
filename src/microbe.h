@@ -13,9 +13,6 @@
 #define true  1
 #define false 0
 
-#define DIRECTION_LEFT  -1
-#define DIRECTION_RIGHT 1
-
 #define ACTION_NONE     0
 #define ACTION_PAUSE    1
 #define ACTION_CONTINUE 1
@@ -23,12 +20,8 @@
 
 #define SCREEN_WIDTH  320
 #define SCREEN_HEIGHT 240
-#define SPRITE_HEIGHT 16
-#define SPRITE_WIDTH  16
 #define WIDTH         20
 #define HEIGHT        15
-#define SCROLL_WIDTH  1280
-#define SCROLL_HEIGHT 640
 
 #define TILEMAP_OFFSET 0x80U
 #define EMPTY_TILE     0x7F
@@ -47,8 +40,6 @@
 #define INVADERS_LAYER 0
 #define INVADER_SOUND  3
 #define UI_LAYER       MAX_BULLETS - 1
-
-#define TILE_SIZE (16 * 16)
 
 #define BOSS_INDEX       32
 #define BOSS_INVADER_TL1 0x98 // 24 + 0x80

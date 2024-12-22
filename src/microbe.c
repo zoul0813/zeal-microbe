@@ -15,13 +15,12 @@
 #include <zvb_gfx.h>
 #include <zvb_hardware.h>
 #include <zos_video.h>
+
+#include <zgdk.h>
+
 #include "assets.h"
-#include "sounds.h"
 #include "microbe.h"
 #include "splash.h"
-#include "utils.h"
-#include "keyboard.h"
-#include "controller.h"
 
 gfx_context vctx;
 Player player;
@@ -150,6 +149,8 @@ void init(void)
     err               = load_letters(&vctx, &options);
     if (err)
         exit(1);
+
+    ascii_map(0x20, 1, EMPTY_TILE);
 
     options.from_byte = 0x8000; // 128
     err               = load_tiles(&vctx, &options);
@@ -311,11 +312,11 @@ uint8_t input(void)
 
 
     player.direction = 0; // not moving
-    if (input & SNES_LEFT)
+    if (input & BUTTON_LEFT)
         player.direction = DIRECTION_LEFT;
-    if (input & SNES_RIGHT)
+    if (input & BUTTON_RIGHT)
         player.direction = DIRECTION_RIGHT;
-    if (input & SNES_B) {
+    if (input & BUTTON_B) {
         if (bullets[PLAYER_BULLET].active == 0) {
             bullets[PLAYER_BULLET].active   = 1;
             bullets[PLAYER_BULLET].sprite.x = player.sprite.x;
@@ -323,9 +324,9 @@ uint8_t input(void)
             sound_play(PLAYER_SOUND, 180, 4);
         }
     }
-    if (input & SNES_START)
+    if (input & BUTTON_START)
         return ACTION_PAUSE;
-    if (input & (SNES_START | SNES_SELECT))
+    if (input & (BUTTON_START | BUTTON_SELECT))
         return ACTION_QUIT;
 
     return ACTION_NONE;
