@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <zvb_gfx.h>
+
+#include <zgdk.h>
+
 #include "assets.h"
 
 gfx_error load_palette(gfx_context* ctx)
@@ -47,39 +50,12 @@ uint8_t* get_splash_end(void)
     return &_splash_end;
 }
 
-
 void __assets__(void) __naked
 {
-    __asm__(
-        // shared palette
-        "__palette_start:\n"
-        "    .incbin \"assets/tiles.ztp\"\n"
-        "__palette_end:\n"
-
-        // tiles
-        "__tiles_start:\n"
-        "    .incbin \"assets/tiles.zts\"\n"
-        "__tiles_end:\n"
-
-        // numbers
-        "__numbers_start:\n"
-        "    .incbin \"assets/numbers.zts\"\n"
-        "__numbers_end:\n"
-
-        // letters
-        "__letters_start:\n"
-        "    .incbin \"assets/letters.zts\"\n"
-        "__letters_end:\n"
-
-        // tilemap
-        "__tilemap_start:\n"
-        "    .incbin \"assets/microbe.ztm\"\n"
-        "__tilemap_end:\n"
-
-        // splash
-        "__splash_start:\n"
-        "    .incbin \"assets/splash.ztm\"\n"
-        "__splash_end:\n"
-        //
-    );
+    INCLUDE_ASSET("palette", "assets/tiles.ztp");
+    INCLUDE_ASSET("tiles", "assets/tiles.zts");
+    INCLUDE_ASSET("numbers", "assets/numbers.zts");
+    INCLUDE_ASSET("letters", "assets/letters.zts");
+    INCLUDE_ASSET("tilemap", "assets/microbe.ztm");
+    INCLUDE_ASSET("splash", "assets/splash.ztm");
 }
