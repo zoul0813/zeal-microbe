@@ -87,11 +87,13 @@ typedef struct {
         uint8_t active;
         uint8_t health;
         uint8_t sprite_index;
+        int8_t direction;
+
+        // sprites
         gfx_sprite tl;
         gfx_sprite tr;
         gfx_sprite bl;
         gfx_sprite br;
-        int8_t direction;
 } Boss;
 
 extern gfx_context vctx;

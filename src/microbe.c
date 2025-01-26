@@ -245,10 +245,7 @@ void reset(uint8_t player_reset)
 
 void deinit(void)
 {
-    zvb_ctrl_l0_scr_x_low  = 0;
-    zvb_ctrl_l0_scr_x_high = 0;
-    zvb_ctrl_l0_scr_y_low  = 0;
-    zvb_ctrl_l0_scr_y_high = 0;
+    tilemap_scroll(0, 0, 0);
     ioctl(DEV_STDOUT, CMD_RESET_SCREEN, NULL);
     sound_deinit();
 
@@ -327,22 +324,15 @@ void draw(void)
     gfx_error err = GFX_SUCCESS; // TODO: return this?
 
     // tilemap offset
-    zvb_ctrl_l0_scr_x_low  = tilemap_x;
-    zvb_ctrl_l0_scr_x_high = 0;
-    zvb_ctrl_l0_scr_y_low  = tilemap_frame ? SCREEN_HEIGHT - 1 : 0;
-    zvb_ctrl_l0_scr_y_high = 0;
+    tilemap_scroll(0, tilemap_x, tilemap_frame ? SCREEN_HEIGHT - 1 : 0);
 
     // faster to just update the `x` position
     err = gfx_sprite_set_x(&vctx, player.sprite_index, player.sprite.x);
     // TODO: error checking?
 
-    err = gfx_sprite_render(&vctx, boss.sprite_index, &boss.tl);
-    err = gfx_sprite_render(&vctx, boss.sprite_index + 1, &boss.tr);
-    err = gfx_sprite_render(&vctx, boss.sprite_index + 2, &boss.bl);
-    err = gfx_sprite_render(&vctx, boss.sprite_index + 3, &boss.br);
+    err = gfx_sprite_render_array(&vctx, boss.sprite_index, &boss.tl, 4);
 
     for (uint8_t i = 0; i < MAX_BULLETS; i++) {
-        // faster to just memcpy the whole thing since we're doing quite a bit?
         err = gfx_sprite_render(&vctx, bullets[i].sprite_index, &bullets[i].sprite);
         // TODO: error checking
     }
