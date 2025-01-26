@@ -31,10 +31,20 @@ uint8_t tiles[WIDTH * HEIGHT];
 uint16_t invaders = 0;
 uint16_t frames   = 0;
 
-static uint8_t controller_mode         = 1;
 static uint8_t tilemap_x               = 0;
 static int8_t tilemap_scroll_direction = 1;
 static uint8_t tilemap_frame           = 0;
+
+void handle_error(zos_err_t err, const char* message, uint8_t fatal)
+{
+    if (err != ERR_SUCCESS) {
+        if (fatal)
+            deinit();
+        printf("\nError[%d] (%02x) %s", err, err, message);
+        if (fatal)
+            exit(err);
+    }
+}
 
 int main(void)
 {
@@ -43,11 +53,8 @@ int main(void)
     Sound* sound = sound_play(SYSTEM_SOUND, 220, 0);
     msleep(75);
     sound_stop(sound);
-    if (controller_mode) {
-        load_splash("press  start{|", get_splash_start());
-    } else {
-        load_splash(" press  start ", get_splash_start());
-    }
+    load_splash("press  start{|", get_splash_start());
+
     sound = sound_play(SYSTEM_SOUND, 440, 3);
     msleep(75);
     sound_stop(sound);
@@ -110,52 +117,34 @@ quit_game:
 
 void init(void)
 {
-    zos_err_t err = keyboard_init();
-    if (err != ERR_SUCCESS) {
-        printf("Failed to init keyboard: %d\n", err);
-        exit(1);
-    }
-    err = controller_init();
-    if (err != ERR_SUCCESS) {
-        printf("Failed to init controller: %d", err);
-    }
-    // verify the controller is actually connected
-    uint16_t test = controller_read();
-    // if unconnected, we'll get back 0xFFFF (all buttons pressed)
-    if (test & 0xFFFF) {
-        controller_mode = 0;
-    }
+    zos_err_t err = input_init(true);
+    handle_error(err, "Failed to init input", 1);
 
     /* Disable the screen to prevent artifacts from showing */
     gfx_enable_screen(0);
 
     err = gfx_initialize(ZVB_CTRL_VID_MODE_GFX_320_8BIT, &vctx);
-    if (err)
-        exit(1);
+    handle_error(err, "Failed to init graphics", 1);
 
     err = load_palette(&vctx);
-    if (err)
-        exit(1);
+    handle_error(err, "Failed to load palette", 1);
 
     gfx_tileset_options options = {
         .compression = TILESET_COMP_RLE,
         .from_byte   = TILE_SIZE * 44, // 0x6100
     };
     err = load_numbers(&vctx, &options);
-    if (err)
-        exit(1);
+    handle_error(err, "Failed to load number tiles", 1);
 
     options.from_byte = TILE_SIZE * 97;
     err               = load_letters(&vctx, &options);
-    if (err)
-        exit(1);
+    handle_error(err, "Failed to load letter tiles", 1);
 
     ascii_map(0x20, 1, EMPTY_TILE);
 
     options.from_byte = 0x8000; // 128
     err               = load_tiles(&vctx, &options);
-    if (err)
-        exit(1);
+    handle_error(err, "Failed to load tiles", 1);
 
     player.score        = 0;
     player.level        = 1;
@@ -165,8 +154,7 @@ void init(void)
     player.sprite.x     = ((WIDTH / 2) * SPRITE_WIDTH) - (SPRITE_WIDTH / 2);
     player.sprite.y     = SPRITE_HEIGHT * 14;
     err                 = gfx_sprite_render(&vctx, player.sprite_index, &player.sprite);
-    if (err)
-        exit(1);
+    handle_error(err, "Failed to render player", 1);
 
     // BOSS INVADER
     boss.active       = false;
@@ -305,10 +293,7 @@ void load_tilemap(uint8_t* tilemap_start, uint16_t width, uint16_t height, uint8
 
 uint8_t input(void)
 {
-    uint16_t input = keyboard_read();
-    if (controller_mode == 1) {
-        input |= controller_read();
-    }
+    uint16_t input = input_get();
 
 
     player.direction = 0; // not moving
@@ -421,7 +406,6 @@ void update(void)
         invader_shoot(3);
     }
 
-#ifndef EMULATOR
     // animate the invaders
     // move the tilemap left/right to show the different invader frames?
     if ((frames & 0x07) == 0x07) {
@@ -431,12 +415,10 @@ void update(void)
         if (tilemap_x == 0)
             tilemap_scroll_direction = 1;
     }
-#endif
+
     // toggle between the first and second frame of animation (top and bottom)
     if ((frames & 0x1F) == 0x1F) {
-#ifndef EMULATOR
         tilemap_frame ^= 1; // toggle frame
-#endif
 
         // always process, we'll only render when boss.active
         if (boss_frame == 0) {
