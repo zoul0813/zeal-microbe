@@ -17,6 +17,7 @@
 #include <zos_video.h>
 
 #include <zgdk.h>
+#include <zgdk/tilemap/scroll.h>
 
 #include "assets.h"
 #include "microbe.h"
