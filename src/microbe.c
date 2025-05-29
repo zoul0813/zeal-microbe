@@ -127,6 +127,8 @@ void init(void)
     err = gfx_initialize(ZVB_CTRL_VID_MODE_GFX_320_8BIT, &vctx);
     handle_error(err, "Failed to init graphics", 1);
 
+    tilemap_fill(&vctx, LAYER1, EMPTY_TILE, 0, 0, 80, 40);
+
     err = load_palette(&vctx);
     handle_error(err, "Failed to load palette", 1);
 
