@@ -1,0 +1,54 @@
+name: Deploy .deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_changes: ${{ steps.check_changes.outputs.deploy_changes }}
+    steps:
+      # Checkout the repo
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      # Check if .deploy folder has changed
+      - name: Check for changes in .deploy
+        id: check_changes
+        run: |
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          if echo "$CHANGED_FILES" | grep -q '^\.deploy/'; then
+            echo "deploy_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "deploy_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Upload the .deploy folder as artifact if it changed
+      - name: Upload .deploy folder
+        if: steps.check_changes.outputs.deploy_changes == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./.deploy
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: needs.build.outputs.deploy_changes == 'true'
+    environment:
+      name: github-pages
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
