@@ -27,5 +27,6 @@
     "istream": "c",
     "mutex": "c",
     "inttypes.h": "c"
-  }
+  },
+  "zeal8bit.uses": "zealos"
 }
