@@ -4,23 +4,12 @@ cmake_minimum_required(VERSION 3.16)
 # Toolchain
 # -------------------------------
 set(ZOS_TOOLCHAIN sdcc)
-include($ENV{ZOS_PATH}/cmake/zealos.cmake)
+include($ENV{ZOS_PATH}/cmake/zos_init.cmake)
 
 # -------------------------------
 # Project
 # -------------------------------
 project(microbe C ASM)
-
-# -------------------------------
-# Copy assets BEFORE compiling
-# -------------------------------
-# This ensures that any .incbin in assets.c or other source files can find the files.
-add_custom_target(copy_assets ALL
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_SOURCE_DIR}/assets
-            ${CMAKE_BINARY_DIR}/assets
-    COMMENT "Copying assets/ into build directory..."
-)
 
 # -------------------------------
 # Executable
@@ -31,25 +20,41 @@ add_executable(microbe
     src/splash.c
 )
 
-# Make sure microbe depends on copied assets
-add_dependencies(microbe copy_assets)
+# # -------------------------------
+# # Include and link SDKs
+# # -------------------------------
+zos_use(zgdk)
+zos_use(zvb)
+
+find_package(ZVB_SDK REQUIRED)
+target_link_libraries(microbe PUBLIC zvb_gfx zvb_sound)
+
+find_package(ZGDK REQUIRED)
+target_link_libraries(microbe PUBLIC zgdk)
 
 # -------------------------------
-# Include and link SDKs
+# Assets
 # -------------------------------
-target_include_directories(microbe PUBLIC
-    $ENV{ZVB_SDK_PATH}/include
-    $ENV{ZGDK_PATH}/include
-    ${CMAKE_BINARY_DIR}         # for assets relative to build dir
-)
 
-target_link_libraries(microbe PUBLIC
-    $ENV{ZVB_SDK_PATH}/lib/zvb_gfx.lib
-    $ENV{ZGDK_PATH}/lib/zgdk.lib
-)
+gif2zeal(microbe FILES
+    "assets/letters.gif"
+    "assets/numbers.gif"
+    COMPRESSED
+    TILEMAP)
+
+gif2zeal(microbe FILES
+    "assets/microbe.gif"
+    "assets/tiles.gif"
+    COMPRESSED)
+
+tiled2zeal(microbe FILES
+    "assets/splash.tmx"
+    "assets/microbe.tmx"
+    VERBOSE
+    LAYER 0)
+
 
 # -------------------------------
 # Convert to binary
 # -------------------------------
-set(MICROBE_IHX ${CMAKE_BINARY_DIR}/microbe.ihx)
-ihx_to_bin(microbe)
+zos_add_outputs(microbe)
