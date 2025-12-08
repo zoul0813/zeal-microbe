@@ -28,7 +28,7 @@ Player player;
 Boss boss;
 uint8_t boss_frame = 0;
 Bullet bullets[MAX_BULLETS];
-uint8_t tiles[WIDTH * HEIGHT];
+uint8_t tiles[WIDTH * (HEIGHT * 2)];
 uint16_t invaders = 0;
 uint16_t frames   = 0;
 

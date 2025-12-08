@@ -27,7 +27,7 @@ zos_use(zgdk)
 zos_use(zvb)
 
 find_package(ZVB_SDK REQUIRED)
-target_link_libraries(microbe PUBLIC zvb_gfx zvb_sound)
+target_link_libraries(microbe PUBLIC zvb)
 
 find_package(ZGDK REQUIRED)
 target_link_libraries(microbe PUBLIC zgdk)
@@ -39,10 +39,6 @@ target_link_libraries(microbe PUBLIC zgdk)
 gif2zeal(microbe FILES
     "assets/letters.gif"
     "assets/numbers.gif"
-    COMPRESSED
-    TILEMAP)
-
-gif2zeal(microbe FILES
     "assets/microbe.gif"
     "assets/tiles.gif"
     COMPRESSED)
