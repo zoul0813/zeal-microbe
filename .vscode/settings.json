@@ -9,6 +9,7 @@
   "C_Cpp.default.forcedInclude": ["${ZDE_PATH}/includes/vscode.h"],
   "C_Cpp.clang_format_sortIncludes": false,
   "C_Cpp.clang_format_style": "file:${ZDE_PATH}/.clang-format",
+  "cmake.configureOnOpen": false,
   "editor.tabSize": 4,
   "editor.insertSpaces": true,
   "editor.detectIndentation": false,
@@ -28,5 +29,6 @@
     "mutex": "c",
     "inttypes.h": "c"
   },
-  "zeal8bit.uses": "zealos"
+"zeal8bit.uses": "zealos",
+"idf.pythonInstallPath": "/Users/david.higgins@konghq.com/.platformio/penv/bin/python"
 }

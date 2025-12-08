@@ -69,8 +69,11 @@ body {
     -webkit-touch-callout: none;  /* prevents long-press callout menu on iOS */
 }
 
-#controls .button {
+.button {
     cursor: pointer;
+    background-color: lightgrey;
+    color: black;
+    font-weight: 700;
 }
 
 .buttons-lr {

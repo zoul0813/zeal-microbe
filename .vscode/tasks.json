@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Build with Make",
+      "label": "Host: Build with Make",
       "type": "shell",
       "command": "make",
       "args": [],            // e.g. ["all"] if you want `make all`

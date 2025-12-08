@@ -1,0 +1,38 @@
+name: build
+on:
+  push:
+    branches:
+      - main
+      - feature/deploy
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup ZDE
+        uses: zoul0813/zeal-dev-environment/github/setup-zde@main
+
+      - name: Build with ZDE
+        run: |
+          zde cmake && cp build/microbe.bin ${{github.workspace}}/.deploy
+
+      - name: Deploy
+        uses: ./.github/actions/deploy-pages
+
+      # - name: Upload binaries
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: zshell-binaries
+      #     path: |
+      #       bin/zshell
+      #       bin/default.img
