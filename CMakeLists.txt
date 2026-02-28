@@ -27,7 +27,7 @@ zos_use(zgdk)
 zos_use(zvb)
 
 find_package(ZVB_SDK REQUIRED)
-target_link_libraries(microbe PUBLIC zvb)
+target_link_libraries(microbe PUBLIC zvb_gfx zvb_sound)
 
 find_package(ZGDK REQUIRED)
 target_link_libraries(microbe PUBLIC zgdk)
