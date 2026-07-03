@@ -17,20 +17,24 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
       - name: Setup ZDE
         uses: zoul0813/zeal-dev-environment/github/setup-zde@main
+        with:
+          deps: zgdk zar
 
       - name: Build with ZDE
-        run: |
-          zde cmake && cp build/microbe.bin ${{github.workspace}}/.deploy
+        run: zde cmake
+
+      - name: Stage binary
+        run: cp bin/microbe.bin "${{ github.workspace }}/.deploy"
 
       - name: Deploy
         uses: ./.github/actions/deploy-pages
 
       # - name: Upload binaries
-      #   uses: actions/upload-artifact@v4
+      #   uses: actions/upload-artifact@v7
       #   with:
       #     name: zshell-binaries
       #     path: |

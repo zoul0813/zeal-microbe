@@ -1,9 +1,7 @@
 name: Deploy .deploy to GitHub Pages
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,7 +16,7 @@ jobs:
     steps:
       # Checkout the repo
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 2
 
@@ -39,7 +37,7 @@ jobs:
       # Upload the .deploy folder as artifact if it changed
       - name: Upload .deploy folder
         if: steps.check_changes.outputs.deploy_changes == 'true'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: ./.deploy
 
@@ -51,4 +49,4 @@ jobs:
       name: github-pages
     steps:
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
