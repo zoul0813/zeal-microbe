@@ -32,9 +32,21 @@ uint8_t tiles[WIDTH * (HEIGHT * 2)];
 uint16_t invaders = 0;
 uint16_t frames   = 0;
 
+static gfx_sprite sprite_arena[SPRITE_ARENA_SIZE];
 static uint8_t tilemap_x               = 0;
 static int8_t tilemap_scroll_direction = 1;
 static uint8_t tilemap_frame           = 0;
+
+static gfx_sprite* register_sprite(uint8_t tile, uint16_t x, uint16_t y, uint8_t flags)
+{
+    gfx_sprite sprite;
+    sprite.tile    = tile;
+    sprite.x       = x;
+    sprite.y       = y;
+    sprite.flags   = flags;
+    sprite.options = SPRITE_OPTION_NONE;
+    return sprites_register(sprite);
+}
 
 void handle_error(zos_err_t err, const char* message, uint8_t fatal)
 {
@@ -99,10 +111,10 @@ int main(void)
 
         if (!boss.active && boss.health > 0 && invaders < 20) {
             boss.active = true;
-            boss.tl.y   = SPRITE_HEIGHT;
-            boss.tr.y   = boss.tl.y;
-            boss.bl.y   = boss.tl.y + SPRITE_HEIGHT;
-            boss.br.y   = boss.bl.y;
+            boss.tl->y  = SPRITE_HEIGHT;
+            boss.tr->y  = boss.tl->y;
+            boss.bl->y  = boss.tl->y + SPRITE_HEIGHT;
+            boss.br->y  = boss.bl->y;
         }
 
     }
@@ -148,33 +160,45 @@ void init(void)
     err               = load_tiles(&vctx, &options);
     handle_error(err, "Failed to load tiles", 1);
 
-    player.score        = 0;
-    player.level        = 1;
-    player.sprite.tile  = PLAYER_TILE;
-    player.sprite_index = 0;
-    player.sprite.flags = SPRITE_BEHIND_FG;
-    player.sprite.x     = ((WIDTH / 2) * SPRITE_WIDTH) - (SPRITE_WIDTH / 2);
-    player.sprite.y     = SPRITE_HEIGHT * 14;
-    err                 = gfx_sprite_render(&vctx, player.sprite_index, &player.sprite);
-    handle_error(err, "Failed to render player", 1);
+    err = sprites_register_arena(sprite_arena, SPRITE_ARENA_SIZE);
+    handle_error(err, "Failed to initialize sprite arena", 1);
+
+    player.score  = 0;
+    player.level  = 1;
+    player.sprite = register_sprite(PLAYER_TILE,
+                                    ((WIDTH / 2) * SPRITE_WIDTH) - (SPRITE_WIDTH / 2),
+                                    SPRITE_HEIGHT * 14,
+                                    SPRITE_BEHIND_FG);
+    handle_error(player.sprite ? ERR_SUCCESS : 1, "Failed to register player sprite", 1);
+
+    for (uint8_t i = 0; i < MAX_BULLETS; i++) {
+        bullets[i].sprite = register_sprite(BULLET_TILE,
+                                            0,
+                                            SCREEN_HEIGHT + SPRITE_HEIGHT,
+                                            SPRITE_BEHIND_FG);
+        handle_error(bullets[i].sprite ? ERR_SUCCESS : 1, "Failed to register bullet sprite", 1);
+    }
 
     // BOSS INVADER
-    boss.active       = false;
-    boss.direction    = 1;
-    boss.sprite_index = BOSS_INDEX;
+    boss.active    = false;
+    boss.direction = 1;
 
     // Top Left
-    boss.tl.tile = BOSS_INVADER_TL1;
-    boss.tl.x    = ((WIDTH / 2) * SPRITE_WIDTH) - (SPRITE_WIDTH / 2);
+    boss.tl = register_sprite(BOSS_INVADER_TL1,
+                              ((WIDTH / 2) * SPRITE_WIDTH) - (SPRITE_WIDTH / 2),
+                              0,
+                              SPRITE_NONE);
     // Top Right
-    boss.tr.tile = BOSS_INVADER_TR1;
-    boss.tr.x    = boss.tl.x + SPRITE_WIDTH;
+    boss.tr = register_sprite(BOSS_INVADER_TR1, boss.tl->x + SPRITE_WIDTH, 0, SPRITE_NONE);
     // Bottom Left
-    boss.bl.tile = BOSS_INVADER_BL1;
-    boss.bl.x    = boss.tl.x;
+    boss.bl = register_sprite(BOSS_INVADER_BL1, boss.tl->x, 0, SPRITE_NONE);
     // Bottom Right
-    boss.br.tile = BOSS_INVADER_BR1;
-    boss.br.x    = boss.bl.x + SPRITE_WIDTH;
+    boss.br = register_sprite(BOSS_INVADER_BR1, boss.bl->x + SPRITE_WIDTH, 0, SPRITE_NONE);
+    handle_error(boss.tl && boss.tr && boss.bl && boss.br ? ERR_SUCCESS : 1,
+                 "Failed to register boss sprites", 1);
+
+    err = sprites_render(&vctx);
+    handle_error(err, "Failed to render sprite arena", 1);
 
     gfx_enable_screen(1);
 
@@ -189,9 +213,9 @@ void reset(uint8_t player_reset)
     load_tilemap(get_tilemap_start(), WIDTH, HEIGHT * 2, INVADERS_LAYER);
 
     // Setup the player sprite
-    player.sprite.x     = ((WIDTH / 2) * 16) - 8;
-    player.sprite.y     = 16 * 14;
-    player.sprite.flags = SPRITE_BEHIND_FG;
+    player.sprite->x     = ((WIDTH / 2) * 16) - 8;
+    player.sprite->y     = 16 * 14;
+    player.sprite->flags = SPRITE_BEHIND_FG;
     player.direction    = 0;
     if (player_reset) {
         player.level = 1;
@@ -199,43 +223,29 @@ void reset(uint8_t player_reset)
         player.lives = 3;
     }
 
-    gfx_error err;
-    err = gfx_sprite_set_tile(&vctx, player.sprite_index, PLAYER_TILE);
-    // TODO: error checking
-    err = gfx_sprite_render(&vctx, player.sprite_index, &player.sprite);
-    // TODO: error checking
+    player.sprite->tile = PLAYER_TILE;
 
     boss.health    = 3;
     boss.direction = 1;
     boss.active    = 0;
 
-    boss.tl.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
-    boss.tr.y = boss.tl.y;
-    boss.bl.y = boss.tl.y + SPRITE_HEIGHT;
-    boss.br.y = boss.bl.y;
+    boss.tl->y = SCREEN_HEIGHT + SPRITE_HEIGHT;
+    boss.tr->y = boss.tl->y;
+    boss.bl->y = boss.tl->y + SPRITE_HEIGHT;
+    boss.br->y = boss.bl->y;
 
-    err = gfx_sprite_set_tile(&vctx, boss.sprite_index, BOSS_INVADER_TL1);
-    // TODO: error checking
-    err = gfx_sprite_set_tile(&vctx, boss.sprite_index + 1, BOSS_INVADER_TR1);
-    // TODO: error checking
-    err = gfx_sprite_set_tile(&vctx, boss.sprite_index + 2, BOSS_INVADER_BL1);
-    // TODO: error checking
-    err = gfx_sprite_set_tile(&vctx, boss.sprite_index + 3, BOSS_INVADER_BR1);
-    // TODO: error checking
+    boss.tl->tile = BOSS_INVADER_TL1;
+    boss.tr->tile = BOSS_INVADER_TR1;
+    boss.bl->tile = BOSS_INVADER_BL1;
+    boss.br->tile = BOSS_INVADER_BR1;
 
     for (uint8_t i = 0; i < MAX_BULLETS; i++) {
-        bullets[i].active       = 0;
-        bullets[i].direction    = 1; // down
-        bullets[i].sprite_index = i + 1;
-        bullets[i].sprite.x     = player.sprite.x + (i * 16);
-        bullets[i].sprite.y     = SCREEN_HEIGHT + SPRITE_HEIGHT; // offscreen
-        bullets[i].sprite.flags = SPRITE_BEHIND_FG;
-        bullets[i].sprite.tile  = BULLET_TILE + i;
-
-        err = gfx_sprite_set_tile(&vctx, bullets[i].sprite_index, BULLET_TILE);
-        // TODO: error checking
-        err = gfx_sprite_render(&vctx, bullets[i].sprite_index, &bullets[i].sprite);
-        // TODO: error checking
+        bullets[i].active        = 0;
+        bullets[i].direction     = 1; // down
+        bullets[i].sprite->x     = player.sprite->x + (i * 16);
+        bullets[i].sprite->y     = SCREEN_HEIGHT + SPRITE_HEIGHT; // offscreen
+        bullets[i].sprite->flags = SPRITE_BEHIND_FG;
+        bullets[i].sprite->tile  = BULLET_TILE + i;
     }
     // player bullet
     bullets[PLAYER_BULLET].direction = 0; // up
@@ -251,17 +261,7 @@ void deinit(void)
 
     // TODO: clear tilesets
 
-    // TODO: clear sprites
-    gfx_error err;
-    err = gfx_sprite_set_tile(&vctx, player.sprite_index, EMPTY_TILE);
-    // TODO: error checking
-    err = gfx_sprite_set_tile(&vctx, boss.sprite_index, EMPTY_TILE);
-    // TODO: error checking
-    err = gfx_sprite_set_tile(&vctx, boss.sprite_index + 1, EMPTY_TILE);
-    // TODO: error checking
-    err = gfx_sprite_set_tile(&vctx, boss.sprite_index + 2, EMPTY_TILE);
-    // TODO: error checking
-    err = gfx_sprite_set_tile(&vctx, boss.sprite_index + 3, EMPTY_TILE);
+    sprites_deregister();
 }
 
 void load_tilemap(uint8_t* tilemap_start, uint16_t width, uint16_t height, uint8_t layer)
@@ -300,9 +300,9 @@ uint8_t input(void)
         player.direction = DIRECTION_RIGHT;
     if (input & BUTTON_B) {
         if (bullets[PLAYER_BULLET].active == 0) {
-            bullets[PLAYER_BULLET].active   = 1;
-            bullets[PLAYER_BULLET].sprite.x = player.sprite.x;
-            bullets[PLAYER_BULLET].sprite.y = player.sprite.y - 12;
+            bullets[PLAYER_BULLET].active    = 1;
+            bullets[PLAYER_BULLET].sprite->x = player.sprite->x;
+            bullets[PLAYER_BULLET].sprite->y = player.sprite->y - 12;
             sound_play(PLAYER_SOUND, 180, 4);
         }
     }
@@ -321,23 +321,11 @@ void next_level(void)
 
 void draw(void)
 {
-    gfx_error err = GFX_SUCCESS; // TODO: return this?
-
     // tilemap offset
     tilemap_scroll(0, tilemap_x, tilemap_frame ? SCREEN_HEIGHT - 1 : 0);
 
-    // faster to just update the `x` position
-    err = gfx_sprite_set_x(&vctx, player.sprite_index, player.sprite.x);
-    // TODO: error checking?
-
-    err = gfx_sprite_render_array(&vctx, boss.sprite_index, &boss.tl, 4);
-
-    for (uint8_t i = 0; i < MAX_BULLETS; i++) {
-        err = gfx_sprite_render(&vctx, bullets[i].sprite_index, &bullets[i].sprite);
-        // TODO: error checking
-    }
-
-    // TODO: error checking
+    gfx_error err = sprites_render(&vctx);
+    handle_error(err, "Failed to render sprite arena", 0);
 }
 
 void invader_shoot(uint8_t index)
@@ -358,10 +346,9 @@ void invader_shoot(uint8_t index)
             if (tile > EMPTY_TILE) {
                 invader++;
                 if (invader >= rng) {
-                    bullets[index].active   = 1;
-                    bullets[index].sprite.x = ((x * 16) + 16) - tilemap_x;
-                    ;
-                    bullets[index].sprite.y = (y * 16) + 16;
+                    bullets[index].active    = 1;
+                    bullets[index].sprite->x = ((x * 16) + 16) - tilemap_x;
+                    bullets[index].sprite->y = (y * 16) + 16;
                     return;
                     // goto invader_shoot_done;
                 }
@@ -376,13 +363,13 @@ void update(void)
     gfx_error err = GFX_SUCCESS; // TODO: return this?
 
     if (player.direction) {
-        player.sprite.x += player.direction * PLAYER_SPEED;
+        player.sprite->x += player.direction * PLAYER_SPEED;
     }
 
-    if (player.sprite.x < 16)
-        player.sprite.x = 16;
-    if (player.sprite.x > 320)
-        player.sprite.x = 320;
+    if (player.sprite->x < 16)
+        player.sprite->x = 16;
+    if (player.sprite->x > 320)
+        player.sprite->x = 320;
 
     if (frames == 31) {
         invader_shoot(1);
@@ -412,52 +399,52 @@ void update(void)
 
         // always process, we'll only render when boss.active
         if (boss_frame == 0) {
-            boss.tl.tile = BOSS_INVADER_TL1;
-            boss.tr.tile = BOSS_INVADER_TR1;
-            boss.bl.tile = BOSS_INVADER_BL1;
-            boss.br.tile = BOSS_INVADER_BR1;
+            boss.tl->tile = BOSS_INVADER_TL1;
+            boss.tr->tile = BOSS_INVADER_TR1;
+            boss.bl->tile = BOSS_INVADER_BL1;
+            boss.br->tile = BOSS_INVADER_BR1;
         } else {
-            boss.tl.tile = BOSS_INVADER_TL2;
-            boss.tr.tile = BOSS_INVADER_TR2;
-            boss.bl.tile = BOSS_INVADER_BL2;
-            boss.br.tile = BOSS_INVADER_BR2;
+            boss.tl->tile = BOSS_INVADER_TL2;
+            boss.tr->tile = BOSS_INVADER_TR2;
+            boss.bl->tile = BOSS_INVADER_BL2;
+            boss.br->tile = BOSS_INVADER_BR2;
         }
         boss_frame ^= 1; // toggle
     }
 
     if ((boss.active && (frames & 0x01) == 0x01)) {
-        boss.tl.x += boss.direction;
-        boss.tr.x += boss.direction;
-        boss.bl.x += boss.direction;
-        boss.br.x += boss.direction;
+        boss.tl->x += boss.direction;
+        boss.tr->x += boss.direction;
+        boss.bl->x += boss.direction;
+        boss.br->x += boss.direction;
 
-        if (boss.tl.x < 32)
+        if (boss.tl->x < 32)
             boss.direction = 1;
-        if (boss.tl.x > SCREEN_WIDTH - 48)
+        if (boss.tl->x > SCREEN_WIDTH - 48)
             boss.direction = -1;
-        // if(boss.tl.x > 64) boss.direction = -1;
+        // if(boss.tl->x > 64) boss.direction = -1;
     }
 
     uint8_t index = MAX_BULLETS;
     for (index = 0; index < MAX_BULLETS; index++) {
         // while(index--) {
-        // bullets[i].sprite.x = player.sprite.x + (i * 16);
+        // bullets[i].sprite->x = player.sprite->x + (i * 16);
         Bullet* bullet = &bullets[index];
         if (bullet->active == 0)
             continue;
 
         // move the bullet
-        bullet->sprite.y += bullet->direction ? 2 : -2;
+        bullet->sprite->y += bullet->direction ? 2 : -2;
 
-        if (bullet->sprite.y < (SPRITE_HEIGHT / 2) || bullet->sprite.y > SCREEN_HEIGHT) {
+        if (bullet->sprite->y < (SPRITE_HEIGHT / 2) || bullet->sprite->y > SCREEN_HEIGHT) {
             // move sprite offscreen
-            bullet->sprite.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
-            bullet->active   = 0;
+            bullet->sprite->y = SCREEN_HEIGHT + SPRITE_HEIGHT;
+            bullet->active    = 0;
             continue; // moved off screen, inactive
         }
 
-        uint16_t x = bullet->sprite.x;
-        uint16_t y = bullet->sprite.y;
+        uint16_t x = bullet->sprite->x;
+        uint16_t y = bullet->sprite->y;
         if (index == 0) { // player bullet
             // offset the origin
             x += 8;
@@ -465,18 +452,18 @@ void update(void)
 
             // did we hit the boss?
             if (boss.active && boss.health > 0) {
-                if (x >= boss.tl.x && x <= boss.tr.x + SPRITE_WIDTH) {
-                    if (y < (boss.bl.y + SPRITE_HEIGHT)) {
+                if (x >= boss.tl->x && x <= boss.tr->x + SPRITE_WIDTH) {
+                    if (y < (boss.bl->y + SPRITE_HEIGHT)) {
                         // HIT
                         boss.health--;
-                        bullet->sprite.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
-                        bullet->active   = 0;
+                        bullet->sprite->y = SCREEN_HEIGHT + SPRITE_HEIGHT;
+                        bullet->active    = 0;
                         if (boss.health == 0) {
                             player.score += 10;
-                            boss.tl.y     = SCREEN_HEIGHT + SPRITE_HEIGHT;
-                            boss.tr.y     = boss.tl.y;
-                            boss.bl.y     = boss.tl.y + SPRITE_HEIGHT;
-                            boss.br.y     = boss.tl.y + SPRITE_HEIGHT;
+                            boss.tl->y     = SCREEN_HEIGHT + SPRITE_HEIGHT;
+                            boss.tr->y     = boss.tl->y;
+                            boss.bl->y     = boss.tl->y + SPRITE_HEIGHT;
+                            boss.br->y     = boss.tl->y + SPRITE_HEIGHT;
                             update_hud();
                             sound_play(PLAYER_SOUND, 220, 6);
                         } else {
@@ -510,8 +497,8 @@ void update(void)
                 // gfx_tilemap_place(&vctx, EMPTY_TILE, INVADERS_LAYER, x + WIDTH, y + HEIGHT);
 
                 // move sprite offscreen
-                bullet->sprite.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
-                bullet->active   = 0;
+                bullet->sprite->y = SCREEN_HEIGHT + SPRITE_HEIGHT;
+                bullet->active    = 0;
 
                 // update score, decrement remaining invaders
                 invaders--;
@@ -521,10 +508,10 @@ void update(void)
             }
         } else { // invader bullet
             x += 8;
-            if (x > player.sprite.x && x < player.sprite.x + 16) {
-                if (y >= player.sprite.y - 16) {
-                    bullet->active   = 0;
-                    bullet->sprite.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
+            if (x > player.sprite->x && x < player.sprite->x + 16) {
+                if (y >= player.sprite->y - 16) {
+                    bullet->active    = 0;
+                    bullet->sprite->y = SCREEN_HEIGHT + SPRITE_HEIGHT;
                     if(player.lives > 0) {
                         player.lives--;
                     }
