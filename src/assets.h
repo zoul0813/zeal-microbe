@@ -1,21 +1,18 @@
 #include <stdint.h>
 #include <zvb_gfx.h>
 
-void __assets__(void);
-
-extern uint8_t _palette_end;
-extern uint8_t _palette_start;
-extern uint8_t _tiles_end;
-extern uint8_t _tiles_start;
-extern uint8_t _numbers_end;
-extern uint8_t _numbers_start;
-extern uint8_t _letters_end;
-extern uint8_t _letters_start;
-extern uint8_t _tilemap_start;
-extern uint8_t _tilemap_end;
-extern uint8_t _splash_start;
-extern uint8_t _splash_end;
-
+extern uint8_t _tiles_ztp_start;
+extern uint8_t _tiles_ztp_end;
+extern uint8_t _tiles_zts_start;
+extern uint8_t _tiles_zts_end;
+extern uint8_t _numbers_zts_start;
+extern uint8_t _numbers_zts_end;
+extern uint8_t _letters_zts_start;
+extern uint8_t _letters_zts_end;
+extern uint8_t _microbe_ztm_start;
+extern uint8_t _microbe_ztm_end;
+extern uint8_t _splash_ztm_start;
+extern uint8_t _splash_ztm_end;
 
 gfx_error load_palette(gfx_context* ctx);
 gfx_error load_tiles(gfx_context* ctx, gfx_tileset_options* options);

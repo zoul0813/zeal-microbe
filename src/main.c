@@ -139,6 +139,7 @@ static void init(void)
     err               = load_letters(&vctx, &options);
     handle_error(err, "Failed to load letter tiles", true);
     ascii_map(0x20, 1, EMPTY_TILE);
+    ascii_map('A', 26, 97);
 
     options.from_byte = 0x8000; // 128
     err               = load_tiles(&vctx, &options);

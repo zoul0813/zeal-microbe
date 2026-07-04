@@ -72,6 +72,14 @@ tiled2zeal(${target_name} FILES
     VERBOSE
     LAYER 0)
 
+embed_assets(${target_name} FILES
+    "build/assets/tiles.ztp"
+    "build/assets/tiles.zts"
+    "build/assets/numbers.zts"
+    "build/assets/letters.zts"
+    "build/assets/microbe.ztm"
+    "build/assets/splash.ztm")
+
 # -------------------------------
 # Convert to binary
 # -------------------------------
