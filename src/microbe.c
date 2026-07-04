@@ -28,11 +28,12 @@ Player player;
 Boss boss;
 uint8_t boss_frame = 0;
 Bullet bullets[MAX_BULLETS];
-uint8_t tiles[WIDTH * (HEIGHT * 2)];
 uint16_t invaders = 0;
 uint16_t frames   = 0;
 
 static gfx_sprite sprite_arena[SPRITE_ARENA_SIZE];
+static uint8_t tiles[WIDTH * (HEIGHT * 2)];
+static Tilemap game_tilemap;
 static uint8_t tilemap_x               = 0;
 static int8_t tilemap_scroll_direction = 1;
 static uint8_t tilemap_frame           = 0;
@@ -71,7 +72,7 @@ int main(void)
     sound = sound_play(SYSTEM_SOUND, 440, 3);
     msleep(75);
     sound_stop(sound);
-    sound->waveform = WAV_SAWTOOTH; // player hit
+    sound_set(SYSTEM_SOUND, WAV_SAWTOOTH); // player hit
 
     reset(true);
 
@@ -138,6 +139,13 @@ void init(void)
     err = gfx_initialize(ZVB_CTRL_VID_MODE_GFX_320_8BIT, &vctx);
     handle_error(err, "Failed to init graphics", 1);
 
+    game_tilemap.rect.x = 0;
+    game_tilemap.rect.y = 0;
+    game_tilemap.rect.w = WIDTH;
+    game_tilemap.rect.h = HEIGHT * 2;
+    err = tilemap_register(&game_tilemap, tiles);
+    handle_error(err, "Failed to register tilemap", 1);
+
     tilemap_fill(&vctx, LAYER1, EMPTY_TILE, 0, 0, 80, 40);
 
     err = load_palette(&vctx);
@@ -145,12 +153,12 @@ void init(void)
 
     gfx_tileset_options options = {
         .compression = TILESET_COMP_RLE,
-        .from_byte   = TILE_SIZE * 44, // 0x6100
+        .from_byte   = TILE_BYTE_OFFSET(TILESET_8BIT, 44)
     };
     err = load_numbers(&vctx, &options);
     handle_error(err, "Failed to load number tiles", 1);
 
-    options.from_byte = TILE_SIZE * 97;
+    options.from_byte = TILE_BYTE_OFFSET(TILESET_8BIT, 97);
     err               = load_letters(&vctx, &options);
     handle_error(err, "Failed to load letter tiles", 1);
 
@@ -212,7 +220,7 @@ void reset(uint8_t player_reset)
     load_tilemap(get_tilemap_start(), WIDTH, HEIGHT * 2, INVADERS_LAYER);
 
     // Setup the player sprite
-    player.sprite->x     = ((WIDTH / 2) * SPRITE_WIDTH) - 8;
+    player.sprite->x     = ((WIDTH / 2) * SPRITE_WIDTH) - SPRITE_HALF;
     player.sprite->y     = SPRITE_WIDTH * 14;
     player.sprite->flags = SPRITE_BEHIND_FG;
     player.direction    = 0;
@@ -266,23 +274,24 @@ void deinit(void)
 void load_tilemap(uint8_t* tilemap_start, uint16_t width, uint16_t height, uint8_t layer)
 {
     uint8_t line[WIDTH];
-    uint8_t* tilemap = tilemap_start; // get_tilemap_start();
 
     // Load the tilemap
     for (uint16_t row = 0; row < height; row++) {
         uint16_t offset = row * width;
         for (uint16_t col = 0; col < width; col++) {
-            line[col] = tilemap[offset + col] + TILEMAP_OFFSET;
+            uint8_t tile = tilemap_start[offset + col] + TILEMAP_OFFSET;
+            tilemap_set_xy(col, row, tile);
+            line[col] = tile;
         }
-        memcpy(&tiles[offset], &line, width);
         gfx_tilemap_load(&vctx, line, width, layer, 0, row);
     }
 
     invaders = 0;
-    for (uint16_t i = 0; i < width * (height / 2); i++) {
-        uint8_t tile = tiles[i];
-        if (tile > EMPTY_TILE) {
-            invaders++;
+    for (uint8_t row = 0; row < height / 2; row++) {
+        for (uint8_t col = 0; col < width; col++) {
+            if (tilemap_get_xy(col, row) > EMPTY_TILE) {
+                invaders++;
+            }
         }
     }
 }
@@ -340,8 +349,7 @@ void invader_shoot(uint8_t index)
     uint8_t invader = 0;
     for (uint8_t y = 0; y < HEIGHT; y++) {
         for (uint8_t x = 0; x < WIDTH; x++) {
-            uint16_t offset = (y * WIDTH) + x;
-            uint8_t tile    = tiles[offset];
+            int16_t tile = tilemap_get_xy(x, y);
             if (tile > EMPTY_TILE) {
                 invader++;
                 if (invader >= rng) {
@@ -446,8 +454,8 @@ void update(void)
         uint16_t y = bullet->sprite->y;
         if (index == 0) { // player bullet
             // offset the origin
-            x += 8;
-            y += 8;
+            x += SPRITE_HALF;
+            y += SPRITE_HALF;
 
             // did we hit the boss?
             if (boss.active && boss.health > 0) {
@@ -483,17 +491,14 @@ void update(void)
             if (x >= WIDTH || y >= HEIGHT)
                 continue;
 
-            uint16_t offset = (y * WIDTH) + x;
-            uint8_t tile    = tiles[offset];
-            // // TODO: error checking
+            int16_t tile = tilemap_get_xy(x, y);
 
             if (tile > EMPTY_TILE) {
                 // found an invader
-                tiles[offset] = EMPTY_TILE;
-                gfx_tilemap_place(&vctx, EMPTY_TILE, INVADERS_LAYER, x, y);
-                gfx_tilemap_place(&vctx, EMPTY_TILE, INVADERS_LAYER, x, y + HEIGHT);
-                // update the offscreen animation tile
-                // gfx_tilemap_place(&vctx, EMPTY_TILE, INVADERS_LAYER, x + WIDTH, y + HEIGHT);
+                tilemap_set_xy(x, y, EMPTY_TILE);
+                tilemap_set_xy(x, y + HEIGHT, EMPTY_TILE);
+                tilemap_place_xy(&vctx, INVADERS_LAYER, EMPTY_TILE, x, y);
+                tilemap_place_xy(&vctx, INVADERS_LAYER, EMPTY_TILE, x, y + HEIGHT);
 
                 // move sprite offscreen
                 bullet->sprite->y = SCREEN_HEIGHT + SPRITE_HEIGHT;
@@ -506,7 +511,7 @@ void update(void)
                 update_hud();
             }
         } else { // invader bullet
-            x += 8;
+            x += SPRITE_HALF;
             if (x > player.sprite->x && x < player.sprite->x + SPRITE_WIDTH) {
                 if (y >= player.sprite->y - SPRITE_WIDTH) {
                     bullet->active    = 0;

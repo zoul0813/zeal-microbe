@@ -30,17 +30,28 @@ void load_splash(const char* str, uint8_t* tilemap_start)
 
         if (tilemap_start != NULL && frames % 30 == 0) {
             // animate logo
+            uint8_t tl;
+            uint8_t tr;
+            uint8_t bl;
+            uint8_t br;
+
             if (boss_frame == 0) {
-                gfx_tilemap_place(&vctx, BOSS_INVADER_TL1, INVADERS_LAYER, 11, 1);
-                gfx_tilemap_place(&vctx, BOSS_INVADER_TR1, INVADERS_LAYER, 12, 1);
-                gfx_tilemap_place(&vctx, BOSS_INVADER_BL1, INVADERS_LAYER, 11, 2);
-                gfx_tilemap_place(&vctx, BOSS_INVADER_BR1, INVADERS_LAYER, 12, 2);
+                tl = BOSS_INVADER_TL1;
+                tr = BOSS_INVADER_TR1;
+                bl = BOSS_INVADER_BL1;
+                br = BOSS_INVADER_BR1;
             } else {
-                gfx_tilemap_place(&vctx, BOSS_INVADER_TL2, INVADERS_LAYER, 11, 1);
-                gfx_tilemap_place(&vctx, BOSS_INVADER_TR2, INVADERS_LAYER, 12, 1);
-                gfx_tilemap_place(&vctx, BOSS_INVADER_BL2, INVADERS_LAYER, 11, 2);
-                gfx_tilemap_place(&vctx, BOSS_INVADER_BR2, INVADERS_LAYER, 12, 2);
+                tl = BOSS_INVADER_TL2;
+                tr = BOSS_INVADER_TR2;
+                bl = BOSS_INVADER_BL2;
+                br = BOSS_INVADER_BR2;
             }
+
+            tilemap_place_xy(&vctx, INVADERS_LAYER, tl, 11, 1);
+            tilemap_place_xy(&vctx, INVADERS_LAYER, tr, 12, 1);
+            tilemap_place_xy(&vctx, INVADERS_LAYER, bl, 11, 2);
+            tilemap_place_xy(&vctx, INVADERS_LAYER, br, 12, 2);
+
             boss_frame ^= 1; // toggle
         }
 

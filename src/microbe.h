@@ -100,6 +100,5 @@ extern Player player;
 extern Boss boss;
 extern uint8_t boss_frame;
 extern Bullet bullets[MAX_BULLETS];
-extern uint8_t tiles[WIDTH * (HEIGHT * 2)];
 extern uint16_t invaders;
 extern uint16_t frames;
