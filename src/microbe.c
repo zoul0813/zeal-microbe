@@ -84,7 +84,13 @@ int main(void)
         draw();
         gfx_wait_end_vblank(&vctx);
 
-        if (invaders == 0) {
+        if (player.lives < 1) {
+            msleep(500);
+            sound_stop_all();
+            load_splash("  game  over  ", NULL);
+            msleep(250);
+            reset(true);
+        } else if (invaders == 0 && (boss.active && boss.health == 0)) {
             msleep(1000);
             sound_stop_all();
             next_level();
@@ -99,13 +105,6 @@ int main(void)
             boss.br.y   = boss.bl.y;
         }
 
-        if (player.lives < 1) {
-            msleep(500);
-            sound_stop_all();
-            load_splash("  game  over  ", NULL);
-            msleep(250);
-            reset(true);
-        }
     }
 quit_game:
     deinit();
@@ -194,7 +193,11 @@ void reset(uint8_t player_reset)
     player.sprite.y     = 16 * 14;
     player.sprite.flags = SPRITE_BEHIND_FG;
     player.direction    = 0;
-    player.lives        = 3;
+    if (player_reset) {
+        player.level = 1;
+        player.score = 0;
+        player.lives = 3;
+    }
 
     gfx_error err;
     err = gfx_sprite_set_tile(&vctx, player.sprite_index, PLAYER_TILE);
@@ -236,12 +239,6 @@ void reset(uint8_t player_reset)
     }
     // player bullet
     bullets[PLAYER_BULLET].direction = 0; // up
-
-    if (player_reset) {
-        player.level = 1;
-        player.score = 0;
-        player.lives = 3;
-    }
 
     update_hud();
 }
@@ -311,7 +308,7 @@ uint8_t input(void)
     }
     if (input & BUTTON_START)
         return ACTION_PAUSE;
-    if (input & (BUTTON_START | BUTTON_SELECT))
+    if (input & BUTTON_SELECT)
         return ACTION_QUIT;
 
     return ACTION_NONE;
@@ -452,6 +449,13 @@ void update(void)
         // move the bullet
         bullet->sprite.y += bullet->direction ? 2 : -2;
 
+        if (bullet->sprite.y < (SPRITE_HEIGHT / 2) || bullet->sprite.y > SCREEN_HEIGHT) {
+            // move sprite offscreen
+            bullet->sprite.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
+            bullet->active   = 0;
+            continue; // moved off screen, inactive
+        }
+
         uint16_t x = bullet->sprite.x;
         uint16_t y = bullet->sprite.y;
         if (index == 0) { // player bullet
@@ -460,7 +464,7 @@ void update(void)
             y += 8;
 
             // did we hit the boss?
-            if (boss.active) {
+            if (boss.active && boss.health > 0) {
                 if (x >= boss.tl.x && x <= boss.tr.x + SPRITE_WIDTH) {
                     if (y < (boss.bl.y + SPRITE_HEIGHT)) {
                         // HIT
@@ -469,7 +473,6 @@ void update(void)
                         bullet->active   = 0;
                         if (boss.health == 0) {
                             player.score += 10;
-                            boss.active   = false;
                             boss.tl.y     = SCREEN_HEIGHT + SPRITE_HEIGHT;
                             boss.tr.y     = boss.tl.y;
                             boss.bl.y     = boss.tl.y + SPRITE_HEIGHT;
@@ -479,6 +482,7 @@ void update(void)
                         } else {
                             sound_play(PLAYER_SOUND, 440, 6);
                         }
+                        continue; // we hit the boss, stop processing
                     }
                 }
             }
@@ -489,6 +493,9 @@ void update(void)
             // convert x,y to tile position
             x = (x >> 4) - 1;
             y = (y >> 4) - 1;
+
+            if (x >= WIDTH || y >= HEIGHT)
+                continue;
 
             uint16_t offset = (y * WIDTH) + x;
             uint8_t tile    = tiles[offset];
@@ -518,17 +525,13 @@ void update(void)
                 if (y >= player.sprite.y - 16) {
                     bullet->active   = 0;
                     bullet->sprite.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
-                    player.lives--;
+                    if(player.lives > 0) {
+                        player.lives--;
+                    }
                     sound_play(SYSTEM_SOUND, 360, 7);
                     update_hud();
                 }
             }
-        }
-
-        if (bullet->sprite.y < (SPRITE_HEIGHT / 2) || bullet->sprite.y > SCREEN_HEIGHT) {
-            // move sprite offscreen
-            bullet->sprite.y = SCREEN_HEIGHT + SPRITE_HEIGHT;
-            bullet->active   = 0;
         }
     }
 }
