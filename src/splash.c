@@ -5,16 +5,26 @@
 #include <zos_time.h>
 
 #include <zgdk.h>
+#include <zgdk/tilemap/scroll.h>
 
 #include "game.h"
 #include "assets.h"
 #include "splash.h"
+
+void load_startup_splash(void)
+{
+    tilemap_scroll(0, 0, 0);
+    tilemap_fill(&vctx, INVADERS_LAYER, EMPTY_TILE, 0, 0, WIDTH, HEIGHT * 2);
+    tilemap_fill(&vctx, UI_LAYER, EMPTY_TILE, 0, 0, WIDTH, HEIGHT);
+    load_splash("press  start{|", get_splash_start());
+}
 
 void load_splash(const char* str, uint8_t* tilemap_start)
 {
     uint8_t text_row = tilemap_start != NULL ? HEIGHT - 1 : 11;
 
     if (tilemap_start != NULL) {
+        hiscore_show();
         game_load_tilemap(tilemap_start, WIDTH, HEIGHT, INVADERS_LAYER);
     }
 
@@ -68,6 +78,11 @@ void load_splash(const char* str, uint8_t* tilemap_start)
         gfx_wait_end_vblank(&vctx);
     } // wait for press
     msleep(100);
+
+    if (tilemap_start != NULL) {
+        hiscore_hide();
+    }
+
     while (game_input() != ACTION_NONE) {} // wait for release
 
     strcpy(text, "              ");

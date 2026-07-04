@@ -170,6 +170,19 @@ static void reset(uint8_t full_reset)
     player_update_hud();
 }
 
+static void show_startup_splash(void)
+{
+    gfx_error err;
+
+    reset(true);
+    player.sprite->y = SCREEN_HEIGHT + SPRITE_HEIGHT;
+    err = sprites_render(&vctx);
+    handle_error(err, "Failed to hide game sprites", false);
+
+    load_startup_splash();
+    reset(true);
+}
+
 static void deinit(void)
 {
     tilemap_scroll(0, 0, 0);
@@ -267,15 +280,13 @@ int main(void)
     Sound* sound = sound_play(SYSTEM_SOUND, 220, 0);
     msleep(75);
     sound_stop(sound);
-    hiscore_show();
-    load_splash("press  start{|", get_splash_start());
-    hiscore_hide();
+
+    show_startup_splash();
 
     sound = sound_play(SYSTEM_SOUND, 440, 3);
     msleep(75);
     sound_stop(sound);
     sound_set(SYSTEM_SOUND, WAV_SAWTOOTH);
-    reset(true);
 
     while (true) {
         sound_loop();
@@ -302,9 +313,8 @@ int main(void)
             msleep(500);
             sound_stop_all();
             hiscore_add(player.score);
-            load_splash("  game  over  ", NULL);
+            show_startup_splash();
             msleep(250);
-            reset(true);
         } else if (invaders.count == 0 && boss.health == 0) {
             msleep(1000);
             sound_stop_all();
