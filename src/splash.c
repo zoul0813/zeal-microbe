@@ -6,23 +6,24 @@
 
 #include <zgdk.h>
 
-#include "microbe.h"
+#include "game.h"
 #include "assets.h"
 #include "splash.h"
 
 void load_splash(const char* str, uint8_t* tilemap_start)
 {
     if (tilemap_start != NULL) {
-        load_tilemap(tilemap_start, WIDTH, HEIGHT, INVADERS_LAYER);
+        game_load_tilemap(tilemap_start, WIDTH, HEIGHT, INVADERS_LAYER);
     }
 
     char text[20];
-    sprintf(text, str);
+    strcpy(text, str);
 
     msleep(250);
-    frames = 0;
+    uint8_t frames = 0;
+    uint8_t boss_frame = 0;
 
-    while (input() != ACTION_CONTINUE) {
+    while (game_input() != ACTION_CONTINUE) {
         gfx_wait_vblank(&vctx);
         frames++;
         if (frames > 59)
@@ -56,18 +57,18 @@ void load_splash(const char* str, uint8_t* tilemap_start)
         }
 
         if (frames > 29) {
-            sprintf(text, "              ");
+            strcpy(text, "              ");
         } else {
-            sprintf(text, str);
+            strcpy(text, str);
         }
 
         nprint_string(&vctx, text, strlen(text), 3, 11);
         gfx_wait_end_vblank(&vctx);
     } // wait for press
     msleep(100);
-    while (input() != ACTION_NONE) {} // wait for release
+    while (game_input() != ACTION_NONE) {} // wait for release
 
-    sprintf(text, "              ");
+    strcpy(text, "              ");
     nprint_string(&vctx, text, strlen(text), 3, 11);
 
     input_flush();   // peace of mind

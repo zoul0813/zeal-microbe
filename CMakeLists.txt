@@ -28,7 +28,11 @@ project(${target_name} C ASM)
 # Executable
 # -------------------------------
 add_executable(${target_name}
-    src/microbe.c
+    src/main.c
+    src/player.c
+    src/invader.c
+    src/boss.c
+    src/bullet.c
     src/assets.c
     src/splash.c
 )
