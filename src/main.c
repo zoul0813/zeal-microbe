@@ -145,6 +145,8 @@ static void init(void)
     err               = load_tiles(&vctx, &options);
     handle_error(err, "Failed to load tiles", true);
 
+    gfx_tileset_add_color_tile(&vctx, EMPTY_TILE, 0);
+
     err = sprites_register_arena(sprite_arena, SPRITE_ARENA_SIZE);
     handle_error(err, "Failed to initialize sprite arena", true);
     handle_error(player_init(), "Failed to register player sprite", true);
