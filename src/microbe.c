@@ -37,6 +37,37 @@ static Tilemap game_tilemap;
 static uint8_t tilemap_x               = 0;
 static int8_t tilemap_scroll_direction = 1;
 static uint8_t tilemap_frame           = 0;
+static uint8_t game_over               = false;
+
+static void descend_invaders(void)
+{
+    uint8_t line[WIDTH];
+    uint8_t game_over_row = (player.sprite->y >> 4) - 1;
+
+    for (uint8_t frame = 0; frame < 2; frame++) {
+        uint8_t frame_offset = frame * HEIGHT;
+
+        for (int8_t row = HEIGHT - 2; row >= 0; row--) {
+            uint8_t destination = frame_offset + row + 1;
+
+            for (uint8_t col = 0; col < WIDTH; col++) {
+                uint8_t tile = tilemap_get_xy(col, frame_offset + row);
+                tilemap_set_xy(col, destination, tile);
+                line[col] = tile;
+
+                if (frame == 0 && row + 1 >= game_over_row && tile > EMPTY_TILE)
+                    game_over = true;
+            }
+            gfx_tilemap_load(&vctx, line, WIDTH, INVADERS_LAYER, 0, destination);
+        }
+
+        for (uint8_t col = 0; col < WIDTH; col++) {
+            tilemap_set_xy(col, frame_offset, EMPTY_TILE);
+            line[col] = EMPTY_TILE;
+        }
+        gfx_tilemap_load(&vctx, line, WIDTH, INVADERS_LAYER, 0, frame_offset);
+    }
+}
 
 static gfx_sprite* register_sprite(uint8_t tile, uint16_t x, uint16_t y, uint8_t flags)
 {
@@ -97,7 +128,7 @@ int main(void)
         draw();
         gfx_wait_end_vblank(&vctx);
 
-        if (player.lives < 1) {
+        if (player.lives < 1 || game_over) {
             msleep(500);
             sound_stop_all();
             load_splash("  game  over  ", NULL);
@@ -216,6 +247,11 @@ void init(void)
 
 void reset(uint8_t player_reset)
 {
+    tilemap_x = 0;
+    tilemap_scroll_direction = 1;
+    tilemap_frame = 0;
+    game_over = false;
+
     // Draw the tilemap
     load_tilemap(get_tilemap_start(), WIDTH, HEIGHT * 2, INVADERS_LAYER);
 
@@ -394,10 +430,14 @@ void update(void)
     // move the tilemap left/right to show the different invader frames?
     if ((frames & 0x07) == 0x07) {
         tilemap_x += tilemap_scroll_direction;
-        if (tilemap_x == ((SPRITE_WIDTH * 2) - 1))
+        if (tilemap_x == ((SPRITE_WIDTH * 2) - 1)) {
             tilemap_scroll_direction = -1;
-        if (tilemap_x == 0)
+            descend_invaders();
+        }
+        if (tilemap_x == 0) {
             tilemap_scroll_direction = 1;
+            descend_invaders();
+        }
     }
 
     // toggle between the first and second frame of animation (top and bottom)
