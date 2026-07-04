@@ -46,6 +46,7 @@ target_link_libraries(${target_name} PUBLIC zvb_gfx zvb_sound)
 
 zos_use(zgdk)
 find_package(ZGDK REQUIRED)
+zgdk_set_hiscore_path(${target_name})
 target_link_libraries(${target_name} PUBLIC zgdk)
 
 zos_use(zar)
@@ -56,10 +57,13 @@ target_link_libraries(${target_name} PUBLIC zar)
 # Assets
 # -------------------------------
 gif2zeal(${target_name} FILES
-    "assets/letters.gif"
-    "assets/numbers.gif"
-    "assets/microbe.gif"
     "assets/tiles.gif"
+    "assets/numbers.gif"
+    COMPRESSED)
+
+gif2zeal(${target_name} FILES
+    "assets/letters.gif"
+    STRIP 4
     COMPRESSED)
 
 tiled2zeal(${target_name} FILES

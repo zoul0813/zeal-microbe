@@ -12,6 +12,8 @@
 
 void load_splash(const char* str, uint8_t* tilemap_start)
 {
+    uint8_t text_row = tilemap_start != NULL ? HEIGHT - 1 : 11;
+
     if (tilemap_start != NULL) {
         game_load_tilemap(tilemap_start, WIDTH, HEIGHT, INVADERS_LAYER);
     }
@@ -62,14 +64,14 @@ void load_splash(const char* str, uint8_t* tilemap_start)
             strcpy(text, str);
         }
 
-        nprint_string(&vctx, text, strlen(text), 3, 11);
+        nprint_string(&vctx, text, strlen(text), 3, text_row);
         gfx_wait_end_vblank(&vctx);
     } // wait for press
     msleep(100);
     while (game_input() != ACTION_NONE) {} // wait for release
 
     strcpy(text, "              ");
-    nprint_string(&vctx, text, strlen(text), 3, 11);
+    nprint_string(&vctx, text, strlen(text), 3, text_row);
 
     input_flush();   // peace of mind
 }

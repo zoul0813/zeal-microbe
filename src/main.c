@@ -9,6 +9,7 @@
 #include <zos_video.h>
 
 #include <zgdk.h>
+#include <zgdk/hiscore.h>
 #include <zgdk/tilemap/scroll.h>
 
 #include "assets.h"
@@ -25,6 +26,33 @@ static uint8_t tiles[WIDTH * (HEIGHT * 2)];
 static Tilemap game_tilemap;
 static uint16_t frames;
 static uint8_t alternate_enemy_source;
+
+static const highscore_t default_hiscores[HISCORES_COUNT] = {
+    { .initials = { 'D', 'P', 'H' }, .score = 250 },
+    { .initials = { 'Z', 'E', 'B' }, .score = 200 },
+    { .initials = { 'Z', 'E', 'B' }, .score = 175 },
+    { .initials = { 'Z', 'E', 'B' }, .score = 150 },
+    { .initials = { 'Z', 'E', 'B' }, .score = 125 },
+    { .initials = { 'Z', 'E', 'B' }, .score = 100 },
+    { .initials = { 'Z', 'E', 'B' }, .score = 75 },
+    { .initials = { 'Z', 'E', 'B' }, .score = 50 },
+    { .initials = { 'Z', 'E', 'B' }, .score = 25 },
+    { .initials = { 'Z', 'E', 'B' }, .score = 10 },
+};
+
+static const hiscore_config_t hiscore_config = {
+    .context        = &vctx,
+    .width          = WIDTH,
+    .height         = HEIGHT,
+    .layer          = UI_LAYER,
+    .empty_tile     = EMPTY_TILE,
+    .default_scores = default_hiscores,
+#ifdef HISCORE_PATH
+    .path = HISCORE_PATH,
+#else
+    .path = NULL,
+#endif
+};
 
 static void deinit(void);
 
@@ -85,6 +113,7 @@ static void init(void)
     };
 
     handle_error(err, "Failed to init input", true);
+    hiscore_init(&hiscore_config);
 
     /* Disable the screen to prevent artifacts from showing */
     gfx_enable_screen(0);
@@ -237,7 +266,9 @@ int main(void)
     Sound* sound = sound_play(SYSTEM_SOUND, 220, 0);
     msleep(75);
     sound_stop(sound);
+    hiscore_show();
     load_splash("press  start{|", get_splash_start());
+    hiscore_hide();
 
     sound = sound_play(SYSTEM_SOUND, 440, 3);
     msleep(75);
@@ -269,6 +300,7 @@ int main(void)
         if (player.lives < 1 || invaders.game_over) {
             msleep(500);
             sound_stop_all();
+            hiscore_add(player.score);
             load_splash("  game  over  ", NULL);
             msleep(250);
             reset(true);
