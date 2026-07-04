@@ -59,6 +59,5 @@ void load_splash(const char* str, uint8_t* tilemap_start)
     sprintf(text, "              ");
     nprint_string(&vctx, text, strlen(text), 3, 11);
 
-    keyboard_flush();   // peace of mind
-    controller_flush(); // peace of mind
+    input_flush();   // peace of mind
 }

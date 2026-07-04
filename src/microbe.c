@@ -87,7 +87,7 @@ int main(void)
         }
 
         frames++;
-        if (frames > 240)
+        if (frames > SCREEN_HEIGHT)
             frames = 0;
 
         update();
@@ -203,8 +203,7 @@ void init(void)
     gfx_enable_screen(1);
 
     sound_init();
-    Sound* s_invader    = sound_get(INVADER_SOUND);
-    s_invader->waveform = WAV_NOISE;
+    sound_set(INVADER_SOUND, WAV_NOISE);
 }
 
 void reset(uint8_t player_reset)
@@ -213,8 +212,8 @@ void reset(uint8_t player_reset)
     load_tilemap(get_tilemap_start(), WIDTH, HEIGHT * 2, INVADERS_LAYER);
 
     // Setup the player sprite
-    player.sprite->x     = ((WIDTH / 2) * 16) - 8;
-    player.sprite->y     = 16 * 14;
+    player.sprite->x     = ((WIDTH / 2) * SPRITE_WIDTH) - 8;
+    player.sprite->y     = SPRITE_WIDTH * 14;
     player.sprite->flags = SPRITE_BEHIND_FG;
     player.direction    = 0;
     if (player_reset) {
@@ -242,7 +241,7 @@ void reset(uint8_t player_reset)
     for (uint8_t i = 0; i < MAX_BULLETS; i++) {
         bullets[i].active        = 0;
         bullets[i].direction     = 1; // down
-        bullets[i].sprite->x     = player.sprite->x + (i * 16);
+        bullets[i].sprite->x     = player.sprite->x + (i * SPRITE_WIDTH);
         bullets[i].sprite->y     = SCREEN_HEIGHT + SPRITE_HEIGHT; // offscreen
         bullets[i].sprite->flags = SPRITE_BEHIND_FG;
         bullets[i].sprite->tile  = BULLET_TILE + i;
@@ -290,7 +289,7 @@ void load_tilemap(uint8_t* tilemap_start, uint16_t width, uint16_t height, uint8
 
 uint8_t input(void)
 {
-    uint16_t input = input_get();
+    uint16_t input = input_read();
 
 
     player.direction = 0; // not moving
@@ -347,8 +346,8 @@ void invader_shoot(uint8_t index)
                 invader++;
                 if (invader >= rng) {
                     bullets[index].active    = 1;
-                    bullets[index].sprite->x = ((x * 16) + 16) - tilemap_x;
-                    bullets[index].sprite->y = (y * 16) + 16;
+                    bullets[index].sprite->x = ((x * SPRITE_WIDTH) + SPRITE_WIDTH) - tilemap_x;
+                    bullets[index].sprite->y = (y * SPRITE_WIDTH) + SPRITE_WIDTH;
                     return;
                     // goto invader_shoot_done;
                 }
@@ -366,10 +365,10 @@ void update(void)
         player.sprite->x += player.direction * PLAYER_SPEED;
     }
 
-    if (player.sprite->x < 16)
-        player.sprite->x = 16;
-    if (player.sprite->x > 320)
-        player.sprite->x = 320;
+    if (player.sprite->x < SPRITE_WIDTH)
+        player.sprite->x = SPRITE_WIDTH;
+    if (player.sprite->x > SCREEN_WIDTH)
+        player.sprite->x = SCREEN_WIDTH;
 
     if (frames == 31) {
         invader_shoot(1);
@@ -428,7 +427,7 @@ void update(void)
     uint8_t index = MAX_BULLETS;
     for (index = 0; index < MAX_BULLETS; index++) {
         // while(index--) {
-        // bullets[i].sprite->x = player.sprite->x + (i * 16);
+        // bullets[i].sprite->x = player.sprite->x + (i * SPRITE_WIDTH);
         Bullet* bullet = &bullets[index];
         if (bullet->active == 0)
             continue;
@@ -508,8 +507,8 @@ void update(void)
             }
         } else { // invader bullet
             x += 8;
-            if (x > player.sprite->x && x < player.sprite->x + 16) {
-                if (y >= player.sprite->y - 16) {
+            if (x > player.sprite->x && x < player.sprite->x + SPRITE_WIDTH) {
+                if (y >= player.sprite->y - SPRITE_WIDTH) {
                     bullet->active    = 0;
                     bullet->sprite->y = SCREEN_HEIGHT + SPRITE_HEIGHT;
                     if(player.lives > 0) {
@@ -533,7 +532,7 @@ void update_hud(void)
     nprint_string(&vctx, text, strlen(text), 0, HEIGHT - 1);
 
     uint8_t lives[3] = {EMPTY_TILE, EMPTY_TILE, EMPTY_TILE};
-    for (uint8_t i = 0; i < sizeof(lives); i++) {
+    for (uint8_t i = 0; i < DIM(lives); i++) {
         if (i < player.lives) {
             lives[i] = 5U + TILEMAP_OFFSET;
         }
