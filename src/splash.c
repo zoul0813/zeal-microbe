@@ -32,7 +32,7 @@ void load_splash(const char* str, uint8_t* tilemap_start)
     strcpy(text, str);
 
     msleep(250);
-    uint8_t frames = 0;
+    uint8_t frames     = 0;
     uint8_t boss_frame = 0;
 
     while (game_input() != ACTION_CONTINUE) {
@@ -74,7 +74,7 @@ void load_splash(const char* str, uint8_t* tilemap_start)
             strcpy(text, str);
         }
 
-        nprint_string(&vctx, text, strlen(text), 3, text_row);
+        hud_tilemap_nput_s(&vctx, text, strlen(text), 3, text_row);
         gfx_wait_end_vblank(&vctx);
     } // wait for press
     msleep(100);
@@ -86,7 +86,7 @@ void load_splash(const char* str, uint8_t* tilemap_start)
     while (game_input() != ACTION_NONE) {} // wait for release
 
     strcpy(text, "              ");
-    nprint_string(&vctx, text, strlen(text), 3, text_row);
+    hud_tilemap_nput_s(&vctx, text, strlen(text), 3, text_row);
 
-    input_flush();   // peace of mind
+    input_flush(); // peace of mind
 }

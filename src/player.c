@@ -79,10 +79,10 @@ void player_update_hud(void)
     uint8_t lives[3] = {EMPTY_TILE, EMPTY_TILE, EMPTY_TILE};
 
     sprintf(text, "scr:%03d", player.score);
-    nprint_string(&vctx, text, strlen(text), WIDTH - 7, HEIGHT - 1);
+    hud_tilemap_nput_s(&vctx, text, strlen(text), WIDTH - 7, HEIGHT - 1);
 
     sprintf(text, "lvl:%03d", player.level);
-    nprint_string(&vctx, text, strlen(text), 0, HEIGHT - 1);
+    hud_tilemap_nput_s(&vctx, text, strlen(text), 0, HEIGHT - 1);
 
     for (uint8_t i = 0; i < DIM(lives); i++) {
         if (i < player.lives)
